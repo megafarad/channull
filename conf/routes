@@ -1,0 +1,33 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET         /                                net.channull.controllers.ApplicationController.index
+POST        /api/signOut                     net.channull.controllers.ApplicationController.signOut
+GET         /authenticate/:provider          net.channull.controllers.SocialAuthController.authenticate(provider)
+
+
+POST        /api/signUp                      net.channull.controllers.SignUpController.post
+POST        /api/signIn                      net.channull.controllers.SignInController.post
+
+GET         /api/user                        net.channull.controllers.UserController.get
+
+GET         /api/totpSetup                   net.channull.controllers.TotpController.getTotpSetup
+POST        /api/disableTotp                 net.channull.controllers.TotpController.disableTotp
+POST        /api/totpSubmit                  net.channull.controllers.TotpController.submit
+POST        /api/totpSetup                   net.channull.controllers.TotpController.postTotpSetup
+
+POST        /api/totpRecoverySubmit          net.channull.controllers.TotpRecoveryController.submit
+
+POST        /api/password/forgot             net.channull.controllers.ForgotPasswordController.submit
+GET         /api/password/reset/:token       net.channull.controllers.ResetPasswordController.get(token: java.util.UUID)
+POST        /api/password/reset/:token       net.channull.controllers.ResetPasswordController.post(token: java.util.UUID)
+POST        /api/password/change             net.channull.controllers.ChangePasswordController.post
+
+GET         /api/account/email/:email        net.channull.controllers.ActivateAccountController.send(email: String)
+GET         /api/account/activate/:token     net.channull.controllers.ActivateAccountController.activate(token: java.util.UUID)
+
+# Map static resources from the /public folder to the /assets URL path
+GET         /assets/*file                    controllers.Assets.versioned(file)
+GET         /*file                           net.channull.controllers.ApplicationController.assetOrDefault(file)
