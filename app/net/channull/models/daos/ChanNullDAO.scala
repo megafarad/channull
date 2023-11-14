@@ -7,9 +7,9 @@ import scala.concurrent.Future
 
 trait ChanNullDAO {
 
-  def getChanNull(id: UUID): Future[Option[ChanNull]]
+  def get(id: UUID): Future[Option[ChanNull]]
 
-  def getChanNull(name: String): Future[Option[ChanNull]]
+  def get(name: String): Future[Option[ChanNull]]
 
-  def saveChanNull(chanNull: ChanNull): Future[ChanNull]
+  def save(chanNull: ChanNull): Future[ChanNull]
 }

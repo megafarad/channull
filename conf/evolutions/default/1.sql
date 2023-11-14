@@ -159,6 +159,7 @@ CREATE TABLE app.channull_post_reaction (
   post_id           UUID        NOT NULL,
   user_id           UUID        NOT NULL,
   reaction_type     VARCHAR     NOT NULL,
+  timestamp         TIMESTAMPTZ NOT NULL,
   CONSTRAINT app_channull_post_reaction_post_id_fk FOREIGN KEY (post_id) REFERENCES app.channull_post (id),
   CONSTRAINT app_channull_post_reaction_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id)
 );

@@ -21,20 +21,22 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     s => ReportStatus.withName(s)
   )
 
-  case class ChanNullRow(id: UUID, name: String, description: String, whenCreated: Instant, whoCreated: UUID,
-    access: ChanNullAccess.Value)
+  case class ChanNullRow(id: UUID, parentId: Option[UUID], name: String, description: String, whenCreated: Instant,
+                         whoCreated: UUID, access: ChanNullAccess.Value)
 
   class ChanNullTable(tag: Tag) extends Table[ChanNullRow](tag, Some("app"), "channull") {
     import PostgresProfile.api._
 
     def id = column[UUID]("id", O.PrimaryKey)
+    def parentId = column[Option[UUID]]("parent_id")
     def name = column[String]("name", O.Unique)
     def description = column[String]("description")
     def whenCreated = column[Instant]("when_created")
     def whoCreated = column[UUID]("who_created")
     def access = column[ChanNullAccess.Value]("access")
     def whoCreatedUser = foreignKey("app_channull_who_created_fk", whoCreated, userTableQuery)(_.id)
-    def * = (id, name, description, whenCreated, whoCreated, access).mapTo[ChanNullRow]
+    def parent = foreignKey("app_channull_parent_id_fk", parentId, TableQuery[ChanNullTable])(_.id.?)
+    def * = (id, parentId, name, description, whenCreated, whoCreated, access).mapTo[ChanNullRow]
   }
 
   val chanNullTableQuery = TableQuery[ChanNullTable]
@@ -119,7 +121,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def expiry = column[Option[Instant]]("expiry")
     def chanNull = foreignKey("app_channull_post_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
     def whoCreatedUser = foreignKey("app_channull_post_who_created_fk", whoCreated, userTableQuery)(_.id)
-    def parent = foreignKey("app_channull_post_parent_id_fk", parentId, TableQuery[ChanNullPostTable])(_.id)
+    def parent = foreignKey("app_channull_post_parent_id_fk", parentId, TableQuery[ChanNullPostTable])(_.id.?)
     def * = (id, parentId, chanNullId, text, whenCreated, whoCreated,
       expiry).mapTo[ChanNullPostRow]
   }
@@ -140,7 +142,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullPostMediaTableQuery = TableQuery[ChanNullPostMediaTable]
 
-  case class ChanNullPostReactionRow(id: UUID, postId: UUID, userID: UUID, reactionType: String)
+  case class ChanNullPostReactionRow(id: UUID, postId: UUID, userID: UUID, reactionType: String, timestamp: Instant)
 
   class ChanNullPostReactionTable(tag: Tag) extends Table[ChanNullPostReactionRow](tag, Some("app"),
     "channull_post_reaction") {
@@ -148,7 +150,8 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def postId = column[UUID]("post_id")
     def userId = column[UUID]("user_id")
     def reactionType = column[String]("reaction_type")
-    def * = (id, postId, userId, reactionType).mapTo[ChanNullPostReactionRow]
+    def timestamp = column[Instant]("timestamp")
+    def * = (id, postId, userId, reactionType, timestamp).mapTo[ChanNullPostReactionRow]
   }
 
   val chanNullPostReactionTableQuery = TableQuery[ChanNullPostReactionTable]
