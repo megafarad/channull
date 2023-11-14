@@ -43,7 +43,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullTableQuery = TableQuery[ChanNullTable]
 
-  val randomPublicChanNullQuery: Query[ChanNullTable, ChanNullRow, Seq] = chanNullTableQuery.sortBy(_ => random).take(1)
+  val randomPublicChanNullQuery = chanNullTableQuery.filter(_.access === ChanNullAccess.Public).sortBy(_ => random).take(1)
 
   case class ChanNullRuleRow(id: UUID, chanNullID: UUID, number: Short, rule: String, whenCreated: Instant,
                              whoCreated: UUID)
