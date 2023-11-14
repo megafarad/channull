@@ -11,5 +11,7 @@ trait ChanNullDAO {
 
   def get(name: String): Future[Option[ChanNull]]
 
+  def getRandomPublic: Future[Option[ChanNull]]
+
   def save(chanNull: ChanNull): Future[ChanNull]
 }

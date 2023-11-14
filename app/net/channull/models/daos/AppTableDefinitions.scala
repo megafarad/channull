@@ -21,6 +21,8 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     s => ReportStatus.withName(s)
   )
 
+  val random: Rep[Double] = SimpleFunction.nullary[Double]("random")
+
   case class ChanNullRow(id: UUID, parentId: Option[UUID], name: String, description: String, whenCreated: Instant,
                          whoCreated: UUID, access: ChanNullAccess.Value)
 
