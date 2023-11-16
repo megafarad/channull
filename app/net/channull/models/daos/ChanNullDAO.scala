@@ -13,5 +13,5 @@ trait ChanNullDAO {
 
   def getRandomPublic: Future[Option[ChanNull]]
 
-  def save(chanNull: ChanNull): Future[ChanNull]
+  def upsert(request: UpsertChanNullRequest): Future[ChanNull]
 }
