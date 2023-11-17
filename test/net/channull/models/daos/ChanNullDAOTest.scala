@@ -2,6 +2,7 @@ package net.channull.models.daos
 
 import net.channull.models._
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -12,6 +13,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 
 import java.time.Instant
 import java.util.UUID
+
+import scala.concurrent.duration._
 
 class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll {
 
@@ -88,13 +91,42 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
     "Upsert Properly" in {
       whenReady(userDAO.save(testUser)) {
         _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
             _ =>
-              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
+              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
                 upsertedChild =>
                   upsertedChild.rules.size must be(1)
                   upsertedChild.parent.isDefined must be(true)
                   upsertedChild.parent.get.creator.userID must be(testUser.userID)
+              }
+          }
+      }
+    }
+
+    "Get ChanNull by name" in {
+      whenReady(userDAO.save(testUser)) {
+        _ => whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
+          _ => whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
+            _ => whenReady(chanNullDAO.get(testChildChanNullUpsertRequest.name)) {
+              maybeChanNull =>
+                maybeChanNull.isDefined must be(true)
+            }
+          }
+        }
+      }
+    }
+
+    "Get Random Public ChanNull (Surf)" in {
+      whenReady(userDAO.save(testUser)) {
+        _ =>
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
+            _ =>
+              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
+                _ =>
+                  whenReady(chanNullDAO.getRandomPublic) {
+                    maybeChanNull =>
+                      maybeChanNull.isDefined must be(true)
+                  }
               }
           }
       }
