@@ -1,6 +1,6 @@
 package net.channull.models.daos
 
-import net.channull.models.{ChanNullAccess, _}
+import net.channull.models.{ ChanNullAccess, _ }
 import play.api.db.slick.DatabaseConfigProvider
 import PostgresProfile.api._
 
@@ -8,9 +8,9 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import scala.collection.View
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
+class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
   extends ChanNullDAO with DAOSlick {
 
   private sealed trait ChanNullQuery
@@ -36,7 +36,7 @@ class ChanNullDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigPr
     .result.map { rows =>
       rows.groupBy {
         case ((chanNullFields, _), _) => chanNullFields
-      }.view.mapValues(values => values.map { case ((_, rules), rulesCreatedBy) => (rules, rulesCreatedBy)})
+      }.view.mapValues(values => values.map { case ((_, rules), rulesCreatedBy) => (rules, rulesCreatedBy) })
     }.map {
       result =>
         result map {
@@ -56,8 +56,9 @@ class ChanNullDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigPr
           case Some((id, maybeParentId, name, createdBy, description, whenCreated, access, chanNullRules)) =>
             maybeParentId match {
               case Some(parentId) => getChanNullRecursive(ByID(parentId)) map {
-                parentChanNull => Some(ChanNull(id, parentChanNull, name, createdBy, description, chanNullRules,
-                  whenCreated, access))
+                parentChanNull =>
+                  Some(ChanNull(id, parentChanNull, name, createdBy, description, chanNullRules,
+                    whenCreated, access))
               }
               case None => Future.successful(Some(ChanNull(id, None, name, createdBy, description, chanNullRules,
                 whenCreated, access)))
@@ -79,8 +80,9 @@ class ChanNullDAOImpl @Inject()(protected val dbConfigProvider: DatabaseConfigPr
     ))
 
     val upsertRulesActions = request.rulesUpsertRequests.map {
-      upsertRequest => chanNullRuleTableQuery.insertOrUpdate(ChanNullRuleRow(upsertRequest.id, upsertRequest.chanNullId,
-        upsertRequest.number,upsertRequest.rule, upsertRequest.whenCreated, upsertRequest.whoCreated))
+      upsertRequest =>
+        chanNullRuleTableQuery.insertOrUpdate(ChanNullRuleRow(upsertRequest.id, upsertRequest.chanNullId,
+          upsertRequest.number, upsertRequest.rule, upsertRequest.whenCreated, upsertRequest.whoCreated))
     }
     db.run(DBIO.sequence(upsertRowAction +: upsertRulesActions).transactionally).flatMap {
       _ => get(request.id).map(_.get) //Should be a safe get. We just inserted the record...

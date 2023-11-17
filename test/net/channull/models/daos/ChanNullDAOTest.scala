@@ -87,14 +87,16 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
   "ChanNullDAO" should {
     "Upsert Properly" in {
       whenReady(userDAO.save(testUser)) {
-        _ => whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
-          _ => whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
-            upsertedChild =>
-              upsertedChild.rules.size must be (1)
-              upsertedChild.parent.isDefined must be (true)
-              upsertedChild.parent.get.creator.userID must be(testUser.userID)
+        _ =>
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
+            _ =>
+              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
+                upsertedChild =>
+                  upsertedChild.rules.size must be(1)
+                  upsertedChild.parent.isDefined must be(true)
+                  upsertedChild.parent.get.creator.userID must be(testUser.userID)
+              }
           }
-        }
       }
     }
   }

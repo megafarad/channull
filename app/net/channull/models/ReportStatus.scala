@@ -1,6 +1,5 @@
 package net.channull.models
 
-
 object ReportStatus extends Enumeration {
   type ReportStatus = Value
   val Pending: ReportStatus.Value = Value("Pending")

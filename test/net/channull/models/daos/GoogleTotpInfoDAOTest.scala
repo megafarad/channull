@@ -51,16 +51,17 @@ class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with Scala
       val loginInfo = LoginInfo("providerId", "providerKey")
 
       whenReady(userDAO.save(testUser)) {
-        createdUser => whenReady(loginInfoDAO.saveUserLoginInfo(createdUser.userID, loginInfo)) {
-          _ =>
-            whenReady(googleTotpInfoDAO.add(loginInfo, googleTotpInfo)) { addedGoogleTotpInfo =>
-              googleTotpInfo must be(addedGoogleTotpInfo)
-              whenReady(googleTotpInfoDAO.find(loginInfo)) {
-                foundGoogleTotpInfo => foundGoogleTotpInfo.isDefined must be(true)
+        createdUser =>
+          whenReady(loginInfoDAO.saveUserLoginInfo(createdUser.userID, loginInfo)) {
+            _ =>
+              whenReady(googleTotpInfoDAO.add(loginInfo, googleTotpInfo)) { addedGoogleTotpInfo =>
+                googleTotpInfo must be(addedGoogleTotpInfo)
+                whenReady(googleTotpInfoDAO.find(loginInfo)) {
+                  foundGoogleTotpInfo => foundGoogleTotpInfo.isDefined must be(true)
+                }
               }
-            }
 
-        }
+          }
       }
     }
   }

@@ -1,35 +1,35 @@
 package net.channull.modules
 
 import com.google.inject.name.Named
-import com.google.inject.{AbstractModule, Provides}
+import com.google.inject.{ AbstractModule, Provides }
 import com.typesafe.config.Config
-import io.github.honeycombcheesecake.play.silhouette.api.actions.{SecuredErrorHandler, UnsecuredErrorHandler}
+import io.github.honeycombcheesecake.play.silhouette.api.actions.{ SecuredErrorHandler, UnsecuredErrorHandler }
 import io.github.honeycombcheesecake.play.silhouette.api.crypto._
 import io.github.honeycombcheesecake.play.silhouette.api.repositories.AuthInfoRepository
 import io.github.honeycombcheesecake.play.silhouette.api.services._
 import io.github.honeycombcheesecake.play.silhouette.api.util._
-import io.github.honeycombcheesecake.play.silhouette.api.{Environment, EventBus, Silhouette, SilhouetteProvider}
-import io.github.honeycombcheesecake.play.silhouette.crypto.{JcaCrypter, JcaCrypterSettings, JcaSigner, JcaSignerSettings}
+import io.github.honeycombcheesecake.play.silhouette.api.{ Environment, EventBus, Silhouette, SilhouetteProvider }
+import io.github.honeycombcheesecake.play.silhouette.crypto.{ JcaCrypter, JcaCrypterSettings, JcaSigner, JcaSignerSettings }
 import io.github.honeycombcheesecake.play.silhouette.impl.authenticators._
 import io.github.honeycombcheesecake.play.silhouette.impl.providers._
 import io.github.honeycombcheesecake.play.silhouette.impl.providers.oauth2._
-import io.github.honeycombcheesecake.play.silhouette.impl.providers.state.{CsrfStateItemHandler, CsrfStateSettings}
+import io.github.honeycombcheesecake.play.silhouette.impl.providers.state.{ CsrfStateItemHandler, CsrfStateSettings }
 import io.github.honeycombcheesecake.play.silhouette.impl.services._
 import io.github.honeycombcheesecake.play.silhouette.impl.util._
-import io.github.honeycombcheesecake.play.silhouette.password.{BCryptPasswordHasher, BCryptSha256PasswordHasher}
+import io.github.honeycombcheesecake.play.silhouette.password.{ BCryptPasswordHasher, BCryptSha256PasswordHasher }
 import io.github.honeycombcheesecake.play.silhouette.persistence.daos.DelegableAuthInfoDAO
 import io.github.honeycombcheesecake.play.silhouette.persistence.repositories.DelegableAuthInfoRepository
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.ValueReader
-import net.channull.controllers.{DefaultRememberMeConfig, DefaultSilhouetteControllerComponents, RememberMeConfig, SilhouetteControllerComponents}
+import net.channull.controllers.{ DefaultRememberMeConfig, DefaultSilhouetteControllerComponents, RememberMeConfig, SilhouetteControllerComponents }
 import net.channull.models.daos._
-import net.channull.models.services.{UserService, UserServiceImpl}
-import net.channull.utils.auth.{CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv}
+import net.channull.models.services.{ UserService, UserServiceImpl }
+import net.channull.utils.auth.{ CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv }
 import net.codingwell.scalaguice.ScalaModule
 import play.api.Configuration
 import play.api.libs.ws.WSClient
-import play.api.mvc.{Cookie, CookieHeaderEncoding}
+import play.api.mvc.{ Cookie, CookieHeaderEncoding }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration

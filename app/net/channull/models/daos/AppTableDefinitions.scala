@@ -1,7 +1,7 @@
 package net.channull.models.daos
 
 import net.channull.models.ReportStatus
-import net.channull.models.{ChanNullAccess, ChanNullPostMedia, UserRole}
+import net.channull.models.{ ChanNullAccess, ChanNullPostMedia, UserRole }
 
 import java.time.Instant
 import java.util.UUID
@@ -24,7 +24,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
   val random: Rep[Double] = SimpleFunction.nullary[Double]("random")
 
   case class ChanNullRow(id: UUID, parentId: Option[UUID], name: String, description: String, whenCreated: Instant,
-                         whoCreated: UUID, access: ChanNullAccess.Value)
+    whoCreated: UUID, access: ChanNullAccess.Value)
 
   class ChanNullTable(tag: Tag) extends Table[ChanNullRow](tag, Some("app"), "channull") {
     import PostgresProfile.api._
@@ -46,7 +46,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
   val randomPublicChanNullQuery = chanNullTableQuery.filter(_.access === ChanNullAccess.Public).sortBy(_ => random).take(1)
 
   case class ChanNullRuleRow(id: UUID, chanNullID: UUID, number: Short, rule: String, whenCreated: Instant,
-                             whoCreated: UUID)
+    whoCreated: UUID)
 
   class ChanNullRuleTable(tag: Tag) extends Table[ChanNullRuleRow](tag, Some("app"), "channull_rule") {
     def id = column[UUID]("id", O.PrimaryKey)
@@ -80,7 +80,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
   val chanNullPermissionsTableQuery = TableQuery[ChanNullPermissionsTable]
 
   case class ChanNullBanRow(id: UUID, chanNullId: UUID, userId: UUID, bannedBy: UUID, reason: String,
-                            whenCreated: Instant, expiry: Instant)
+    whenCreated: Instant, expiry: Instant)
 
   class ChanNullBanTable(tag: Tag) extends Table[ChanNullBanRow](tag, Some("app"), "channull_ban") {
     def id = column[UUID]("id", O.PrimaryKey)
@@ -113,7 +113,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
   val chanNullBanViolatedRuleTableQuery = TableQuery[ChanNullBanViolatedRuleTable]
 
   case class ChanNullPostRow(id: UUID, parentId: Option[UUID], chanNullId: UUID, text: Option[String],
-                             whenCreated: Instant, whoCreated: UUID, expiry: Option[Instant])
+    whenCreated: Instant, whoCreated: UUID, expiry: Option[Instant])
 
   class ChanNullPostTable(tag: Tag) extends Table[ChanNullPostRow](tag, Some("app"), "channull_post") {
     def id = column[UUID]("id", O.PrimaryKey)
@@ -141,7 +141,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def contentUrl = column[String]("content_url")
     def contentSize = column[Long]("content_size")
     def post = foreignKey("app_channull_post_media_post_id_fk", postId, chanNullPostTableQuery)(_.id)
-    def *  = (id, postId, altText, contentType, contentUrl, contentSize).mapTo[ChanNullPostMedia]
+    def * = (id, postId, altText, contentType, contentUrl, contentSize).mapTo[ChanNullPostMedia]
   }
 
   val chanNullPostMediaTableQuery = TableQuery[ChanNullPostMediaTable]
@@ -169,13 +169,13 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def role = column[UserRole.Value]("role")
     def user = foreignKey("app_user_channull_user_id_fk", userId, userTableQuery)(_.id)
     def chanNull = foreignKey("app_user_channull_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
-    def *  = (id, userId, chanNullId, role).mapTo[UserChanNullRow]
+    def * = (id, userId, chanNullId, role).mapTo[UserChanNullRow]
   }
 
   val userChanNullTableQuery = TableQuery[UserChanNullTable]
 
   case class ReportRow(id: UUID, reporter: UUID, postId: UUID, report: String, timestamp: Instant,
-                       status: ReportStatus.Value)
+    status: ReportStatus.Value)
 
   class ReportTable(tag: Tag) extends Table[ReportRow](tag, Some("app"), "report") {
     def id = column[UUID]("id", O.PrimaryKey)
@@ -186,7 +186,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def status = column[ReportStatus.Value]("status")
     def reporterUser = foreignKey("app_report_reporter_fk", reporter, userTableQuery)(_.id)
     def post = foreignKey("app_report_post_id_fk", postId, chanNullPostTableQuery)(_.id)
-    def *  = (id, reporter, postId, report, timestamp, status).mapTo[ReportRow]
+    def * = (id, reporter, postId, report, timestamp, status).mapTo[ReportRow]
   }
 
   val reportTableQuery = TableQuery[ReportTable]
