@@ -11,7 +11,7 @@ trait ChanNullPostDAO {
 
   def getPost(postId: UUID): Future[Option[ChanNullPost]]
 
-  def save(post: ChanNullPost): Future[ChanNullPost]
+  def upsert(upsertRequest: UpsertChanNullPostRequest): Future[ChanNullPost]
 
   def delete(post: ChanNullPost): Future[Unit]
 

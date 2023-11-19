@@ -18,7 +18,7 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
   private case class ByName(name: String) extends ChanNullQuery
   private case object RandomPublic extends ChanNullQuery
 
-  protected def chanNullRowQuery(query: ChanNullQuery): Query[(Rep[UUID], Rep[Option[UUID]], Rep[String], UserTable, Rep[String], Rep[Instant], Rep[ChanNullAccess.Value]), (UUID, Option[UUID], String, User, String, Instant, ChanNullAccess.Value), Seq] = {
+  private def chanNullRowQuery(query: ChanNullQuery) = {
     val filteredQuery = query match {
       case ByID(id) => chanNullTableQuery.filter(_.id === id)
       case ByName(name) => chanNullTableQuery.filter(_.name === name)
@@ -30,26 +30,34 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       chanNull.access)
   }
 
-  protected def chanNullRowWithRules(query: ChanNullQuery): DBIOAction[View[(UUID, Option[UUID], String, User, String, Instant, ChanNullAccess.Value, Seq[ChanNullRule])], NoStream, Effect.Read] = chanNullRowQuery(query)
-    .join(chanNullRuleTableQuery).on(_._1 === _.chanNullId)
-    .join(userTableQuery).on(_._2.whoCreated === _.id)
-    .result.map { rows =>
-      rows.groupBy {
-        case ((chanNullFields, _), _) => chanNullFields
-      }.view.mapValues(values => values.map { case ((_, rules), rulesCreatedBy) => (rules, rulesCreatedBy) })
-    }.map {
-      result =>
-        result map {
-          case ((id, parentId, name, createdBy, description, whenCreated, access), rulesFields) =>
-            val chanNullRules = rulesFields.map {
-              case (rule, createdByUser) => ChanNullRule(rule.id, rule.chanNullID, rule.number,
-                rule.rule, rule.whenCreated, createdByUser)
-            }
-            (id, parentId, name, createdBy, description, whenCreated, access, chanNullRules)
-        }
-    }
+  private def chanNullRowWithRules(query: ChanNullQuery) = {
 
-  protected def getChanNullRecursive(query: ChanNullQuery): Future[Option[ChanNull]] = db.run(chanNullRowWithRules(query))
+    val rulesQuery = chanNullRuleTableQuery.join(userTableQuery).on(_.whoCreated === _.id)
+
+    val baseQuery = chanNullRowQuery(query)
+      .joinLeft(rulesQuery).on(_._1 === _._1.chanNullId)
+
+    baseQuery.result.map { rows =>
+        rows.groupBy {
+          case (chanNullFields, _) => chanNullFields
+        }.view.mapValues(values => values.flatMap {
+          case (_, Some((rules, rulesCreatedBy))) => Seq((rules, rulesCreatedBy))
+          case (_, None) => Nil
+        })
+      }.map {
+        result =>
+          result map {
+            case ((id, parentId, name, createdBy, description, whenCreated, access), rulesFields) =>
+              val chanNullRules = rulesFields.map {
+                case (rule, createdByUser) => ChanNullRule(rule.id, rule.chanNullID, rule.number,
+                  rule.rule, rule.whenCreated, createdByUser)
+              }
+              (id, parentId, name, createdBy, description, whenCreated, access, chanNullRules)
+          }
+      }
+
+  }
+  private def getChanNullRecursive(query: ChanNullQuery): Future[Option[ChanNull]] = db.run(chanNullRowWithRules(query))
     .flatMap {
       fields =>
         fields.headOption match {
