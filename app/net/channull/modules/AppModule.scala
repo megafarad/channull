@@ -9,6 +9,7 @@ class AppModule extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     bind[ChanNullDAO].to[ChanNullDAOImpl]
     bind[ChanNullPostDAO].to[ChanNullPostDAOImpl]
+    bind[ChanNullPostMediaDAO].to[ChanNullPostMediaDAOImpl]
   }
 
 }

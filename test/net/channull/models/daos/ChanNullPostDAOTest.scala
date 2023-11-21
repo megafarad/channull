@@ -1,6 +1,5 @@
 package net.channull.models.daos
 
-import net.channull.models._
 import net.channull.modules.JobModule
 import net.channull.test.util.CommonTest
 import org.scalatest.BeforeAndAfterAll
@@ -13,8 +12,6 @@ import play.api.db.DBApi
 import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
-import java.time.Instant
-import java.util.UUID
 import scala.concurrent.duration._
 
 class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
