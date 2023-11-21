@@ -35,27 +35,6 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
-  val testChanNullPostID: UUID = UUID.randomUUID()
-  val testChildChanNullPostID: UUID = UUID.randomUUID()
-  val testSecondChildChanNullPostId: UUID = UUID.randomUUID()
-  val testGrandChildChanNullPostID: UUID = UUID.randomUUID()
-
-  val testUpsertChanNullPostRequest: UpsertChanNullPostRequest = UpsertChanNullPostRequest(
-    id = testChanNullPostID, parentId = None, chanNullId = testParentChanNullId, text = Some("Be kind"),
-    whenCreated = Instant.now(), whoCreated = testUser.userID, expiry = None)
-  val testUpsertChildChanNullPostRequest: UpsertChanNullPostRequest = UpsertChanNullPostRequest(
-    id = testChildChanNullPostID, parentId = Some(testChanNullPostID), chanNullId = testParentChanNullId,
-    text = Some("Be kind"), whenCreated = Instant.now(), whoCreated = testUser.userID, expiry = None
-  )
-  val testUpsertSecondChildChanNullPostRequest: UpsertChanNullPostRequest = UpsertChanNullPostRequest(
-    id = testSecondChildChanNullPostId, parentId = Some(testChanNullPostID), chanNullId = testParentChanNullId,
-    text = Some("Be kind"), whenCreated = Instant.now(), whoCreated = testUser.userID, expiry = None
-  )
-  val testUpsertGrandChildChanNullPostRequest: UpsertChanNullPostRequest = UpsertChanNullPostRequest(
-    id = testGrandChildChanNullPostID, parentId = Some(testChildChanNullPostID), chanNullId = testParentChanNullId,
-    text = Some("Be kind"), whenCreated = Instant.now(), whoCreated = testUser.userID, expiry = None
-  )
-
   "ChanNullPostDAO" should {
     "Upsert properly" in {
       whenReady(userDAO.save(testUser)) {
@@ -104,11 +83,11 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
                                   whenReady(chanNullPostDAO.delete(testChanNullPostID)) {
                                     _ =>
                                       whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
-                                        shouldBeNonePost =>
-                                          shouldBeNonePost.isDefined must be(false)
+                                        post =>
+                                          post.isDefined must be(false)
                                           whenReady(chanNullPostDAO.getPost(testChildChanNullPostID)) {
-                                            alsoShouldBeNonePost =>
-                                              alsoShouldBeNonePost.isDefined must be(false)
+                                            childPost =>
+                                              childPost.isDefined must be(false)
                                               whenReady(chanNullPostDAO.getPost(testSecondChildChanNullPostId)) {
                                                 secondChildPost =>
                                                   secondChildPost.isDefined must be(false)

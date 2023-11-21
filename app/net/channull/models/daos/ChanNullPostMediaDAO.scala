@@ -11,7 +11,7 @@ trait ChanNullPostMediaDAO {
 
   def get(id: UUID): Future[Option[ChanNullPostMedia]]
 
-  def save(media: ChanNullPostMedia): Future[ChanNullPostMedia]
+  def upsert(media: ChanNullPostMedia): Future[ChanNullPostMedia]
 
-  def delete(media: ChanNullPostMedia): Future[Unit]
+  def delete(id: UUID): Future[Unit]
 }
