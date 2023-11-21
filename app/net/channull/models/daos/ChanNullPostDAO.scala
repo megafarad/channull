@@ -13,6 +13,6 @@ trait ChanNullPostDAO {
 
   def upsert(upsertRequest: UpsertChanNullPostRequest): Future[ChanNullPost]
 
-  def delete(post: ChanNullPost): Future[Unit]
+  def delete(postId: UUID): Future[Unit]
 
 }

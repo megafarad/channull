@@ -141,7 +141,7 @@ CREATE TABLE app.channull_post (
   expiry        TIMESTAMPTZ,
   CONSTRAINT app_channull_post_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull (id),
   CONSTRAINT app_channull_post_who_created_fk FOREIGN KEY (who_created) REFERENCES auth.user (id),
-  CONSTRAINT app_channull_post_parent_id_fk FOREIGN KEY (parent_id) REFERENCES app.channull_post (id)
+  CONSTRAINT app_channull_post_parent_id_fk FOREIGN KEY (parent_id) REFERENCES app.channull_post (id) ON DELETE CASCADE
 );
 
 CREATE TABLE app.channull_post_media (
@@ -151,7 +151,7 @@ CREATE TABLE app.channull_post_media (
   content_type      VARCHAR,
   content_url       TEXT,
   content_size      BIGINT,
-  CONSTRAINT app_channull_post_media_post_id_fk FOREIGN KEY (post_id) REFERENCES app.channull_post (id)
+  CONSTRAINT app_channull_post_media_post_id_fk FOREIGN KEY (post_id) REFERENCES app.channull_post (id) ON DELETE CASCADE
 );
 
 CREATE TABLE app.channull_post_reaction (
@@ -160,7 +160,7 @@ CREATE TABLE app.channull_post_reaction (
   user_id           UUID        NOT NULL,
   reaction_type     VARCHAR     NOT NULL,
   timestamp         TIMESTAMPTZ NOT NULL,
-  CONSTRAINT app_channull_post_reaction_post_id_fk FOREIGN KEY (post_id) REFERENCES app.channull_post (id),
+  CONSTRAINT app_channull_post_reaction_post_id_fk FOREIGN KEY (post_id) REFERENCES app.channull_post (id) ON DELETE CASCADE,
   CONSTRAINT app_channull_post_reaction_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id)
 );
 

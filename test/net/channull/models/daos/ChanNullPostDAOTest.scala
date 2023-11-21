@@ -1,6 +1,7 @@
 package net.channull.models.daos
 
 import net.channull.models._
+import net.channull.modules.JobModule
 import net.channull.test.util.CommonTest
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -25,6 +26,7 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
     .configure("slick.dbs.default.db.url" -> "jdbc:postgresql://localhost:5432/channulltest")
     .configure("slick.dbs.default.db.user" -> "postgres")
     .configure("slick.dbs.default.db.password" -> "postgres")
+    .disable[JobModule]
     .build()
 
   val userDAO: UserDAO = app.injector.instanceOf[UserDAO]
@@ -55,7 +57,7 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
   )
 
   "ChanNullPostDAO" should {
-    "Upsert Properly" in {
+    "Upsert properly" in {
       whenReady(userDAO.save(testUser)) {
         _ =>
           whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
@@ -74,12 +76,56 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
                                 maybeChanNullPost.isDefined must be (true)
                                 val post = maybeChanNullPost.get
                                 post.children.size must be (2)
-                                println(post)
                             }
                           }
                       }
                   }
               }
+          }
+      }
+    }
+
+    "Delete properly" in {
+      whenReady(userDAO.save(testUser)) {
+        _ =>
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
+            _ =>
+              whenReady(chanNullPostDAO.upsert(testUpsertChanNullPostRequest)) {
+                _ =>
+                  whenReady(chanNullPostDAO.upsert(testUpsertChildChanNullPostRequest)) {
+                    _ =>
+                      whenReady(chanNullPostDAO.upsert(testUpsertSecondChildChanNullPostRequest)) {
+                        _ =>
+                          whenReady(chanNullPostDAO.upsert(testUpsertGrandChildChanNullPostRequest)) {
+                            _ =>
+                              whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
+                                maybePost =>
+                                  maybePost.isDefined must be(true)
+                                  whenReady(chanNullPostDAO.delete(testChanNullPostID)) {
+                                    _ =>
+                                      whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
+                                        shouldBeNonePost =>
+                                          shouldBeNonePost.isDefined must be(false)
+                                          whenReady(chanNullPostDAO.getPost(testChildChanNullPostID)) {
+                                            alsoShouldBeNonePost =>
+                                              alsoShouldBeNonePost.isDefined must be(false)
+                                              whenReady(chanNullPostDAO.getPost(testSecondChildChanNullPostId)) {
+                                                secondChildPost =>
+                                                  secondChildPost.isDefined must be(false)
+                                                  whenReady(chanNullPostDAO.getPost(testGrandChildChanNullPostID)) {
+                                                    grandchildPost =>
+                                                      grandchildPost.isDefined must be(false)
+                                                  }
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                        }
+                      }
+                  }
+              }
+
           }
       }
     }

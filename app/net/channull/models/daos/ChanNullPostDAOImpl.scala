@@ -15,16 +15,18 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   private sealed trait ChanNullPostQuery
   private case class ByID(id: UUID) extends ChanNullPostQuery
   private case class ByParentID(id: UUID) extends ChanNullPostQuery
-  private case class NullParent(page: Int, pageSize: Int) extends ChanNullPostQuery
+  private case class NullParent(chanNullName: String, page: Int, pageSize: Int) extends ChanNullPostQuery
 
   private def postRowQuery(postQuery: ChanNullPostQuery) = {
-    val filteredQuery = postQuery match {
+    val filteredQuery: Query[ChanNullPostTable, ChanNullPostRow, Seq] = postQuery match {
       case ByID(id) => chanNullPostTableQuery.filter(_.id === id)
       case ByParentID(parentID) => chanNullPostTableQuery.filter(_.parentId === parentID)
-      case NullParent(page, pageSize) => {
+      case NullParent(chanNullName, page, pageSize) =>
         val offset = page * pageSize
-        chanNullPostTableQuery.filter(_.parentId.isEmpty).drop(offset).take(pageSize)
-      }
+
+        chanNullTableQuery.filter(_.name === chanNullName).join(chanNullPostTableQuery)
+          .on(_.id === _.chanNullId).filter(_._2.parentId.isEmpty).drop(offset).take(pageSize)
+          .map(_._2)
     }
 
     filteredQuery.join(userTableQuery).on(_.whoCreated === _.id)
@@ -34,6 +36,8 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
             postTable.expiry)
       }
   }
+  private def totalChanNullPostsQuery(chanNullName: String) = chanNullTableQuery.filter(_.name === chanNullName)
+    .join(chanNullPostTableQuery).on(_.id === _.chanNullId).map(_._2)
 
 
   private def postRowWithReactions(postQuery: ChanNullPostQuery) = {
@@ -41,7 +45,7 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     val reactionsQuery = chanNullPostReactionTableQuery.join(userTableQuery).on(_.userId === _.id)
 
     val baseQuery = postRowQuery(postQuery)
-      .joinLeft(reactionsQuery).on(_._1 === _._1.postId)
+      .joinLeft(reactionsQuery).on(_._1 === _._1.postId).sortBy(_._1._5)
 
     baseQuery.result.map { rows =>
         rows.groupBy {
@@ -73,13 +77,23 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       })
   }
 
+  /**
+   * Deletes the post. Descendant posts, related reactions and media also get deleted with cascading deletes.
+   *
+   * @param id The ID of the post
+   * @return
+   */
+  private def deleteAction(id: UUID) = chanNullPostTableQuery.filter(_.id === id).delete
   private def addAction(upsertRequest: UpsertChanNullPostRequest) =
     chanNullPostTableQuery.insertOrUpdate(ChanNullPostRow(id = upsertRequest.id, parentId = upsertRequest.parentId,
       chanNullId = upsertRequest.chanNullId, text = upsertRequest.text, whenCreated = upsertRequest.whenCreated,
       whoCreated = upsertRequest.whoCreated, expiry = upsertRequest.expiry))
 
 
-  def getPosts(chanNullName: String, page: Int, pageSize: Int): Future[Page[ChanNullPost]] = ???
+  def getPosts(chanNullName: String, page: Int, pageSize: Int): Future[Page[ChanNullPost]] = for {
+    posts <- getPostsRecursive(NullParent(chanNullName, page, pageSize))
+    totalCount <- db.run(totalChanNullPostsQuery(chanNullName).length.result)
+  } yield Page(posts, page, page * pageSize, totalCount.toLong)
 
   def getPost(postId: UUID): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(postId)).map(_.headOption)
 
@@ -89,5 +103,5 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
         getPost(upsertRequest.id).map(_.get)
     }
 
-  def delete(post: ChanNullPost): Future[Unit] = ???
+  def delete(postId: UUID): Future[Unit] = db.run(deleteAction(postId)).map(_ => ())
 }
