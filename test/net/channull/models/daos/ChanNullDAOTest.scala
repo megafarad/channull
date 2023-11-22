@@ -1,5 +1,6 @@
 package net.channull.models.daos
 
+import net.channull.modules.JobModule
 import net.channull.test.util.CommonTest
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -21,6 +22,7 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
     .configure("slick.dbs.default.db.url" -> "jdbc:postgresql://localhost:5432/channulltest")
     .configure("slick.dbs.default.db.user" -> "postgres")
     .configure("slick.dbs.default.db.password" -> "postgres")
+    .disable[JobModule]
     .build()
 
   val userDAO: UserDAO = app.injector.instanceOf[UserDAO]
@@ -28,17 +30,22 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+
   "ChanNullDAO" should {
     "Upsert Properly" in {
       whenReady(userDAO.save(testUser)) {
         _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
             _ =>
-              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
-                upsertedChild =>
-                  upsertedChild.rules.size must be(1)
-                  upsertedChild.parent.isDefined must be(true)
-                  upsertedChild.parent.get.creator.userID must be(testUser.userID)
+              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
+                _ =>
+                  whenReady(chanNullDAO.get(testParentChanNullId)) {
+                    maybeChanNull =>
+                      maybeChanNull.isDefined must be(true)
+                      val chanNull = maybeChanNull.get
+                      chanNull.children.size must be(1)
+                  }
               }
           }
       }

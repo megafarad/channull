@@ -15,6 +15,7 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
 
   private sealed trait ChanNullQuery
   private case class ByID(id: UUID) extends ChanNullQuery
+  private case class ByParentId(parentId: UUID) extends ChanNullQuery
   private case class ByName(name: String) extends ChanNullQuery
   private case object RandomPublic extends ChanNullQuery
 
@@ -22,7 +23,8 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
     val filteredQuery = query match {
       case ByID(id) => chanNullTableQuery.filter(_.id === id)
       case ByName(name) => chanNullTableQuery.filter(_.name === name)
-      case RandomPublic => randomPublicChanNullQuery
+      case ByParentId(parentId) => chanNullTableQuery.filter(_.parentId === parentId)
+      case RandomPublic => randomPublicChanNullQuery.filter(_.parentId.isEmpty)
     }
     for {
       (chanNull, createdByUser) <- filteredQuery join userTableQuery on (_.whoCreated === _.id)
@@ -57,29 +59,22 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       }
 
   }
-  private def getChanNullRecursive(query: ChanNullQuery): Future[Option[ChanNull]] = db.run(chanNullRowWithRules(query))
+  private def getChanNullRecursive(query: ChanNullQuery): Future[Seq[ChanNull]] = db.run(chanNullRowWithRules(query))
     .flatMap {
-      fields =>
-        fields.headOption match {
-          case Some((id, maybeParentId, name, createdBy, description, whenCreated, access, chanNullRules)) =>
-            maybeParentId match {
-              case Some(parentId) => getChanNullRecursive(ByID(parentId)) map {
-                parentChanNull =>
-                  Some(ChanNull(id, parentChanNull, name, createdBy, description, chanNullRules,
-                    whenCreated, access))
-              }
-              case None => Future.successful(Some(ChanNull(id, None, name, createdBy, description, chanNullRules,
-                whenCreated, access)))
-            }
-          case None => Future.successful(None)
-        }
+      view => Future.sequence(view.toSeq.map{
+        case (id, _, name, createdBy, description, whenCreated, access, chanNullRules) =>
+          getChanNullRecursive(ByParentId(id)) map {
+            children => ChanNull(id, name, createdBy, description, chanNullRules, whenCreated, access, children)
+          }
+      })
+
     }
 
-  def get(id: UUID): Future[Option[ChanNull]] = getChanNullRecursive(ByID(id))
+  def get(id: UUID): Future[Option[ChanNull]] = getChanNullRecursive(ByID(id)).map(_.headOption)
 
-  def get(name: String): Future[Option[ChanNull]] = getChanNullRecursive(ByName(name))
+  def get(name: String): Future[Option[ChanNull]] = getChanNullRecursive(ByName(name)).map(_.headOption)
 
-  def getRandomPublic: Future[Option[ChanNull]] = getChanNullRecursive(RandomPublic)
+  def getRandomPublic: Future[Option[ChanNull]] = getChanNullRecursive(RandomPublic).map(_.headOption)
 
   def upsert(request: UpsertChanNullRequest): Future[ChanNull] = {
     val upsertRowAction = chanNullTableQuery.insertOrUpdate(ChanNullRow(

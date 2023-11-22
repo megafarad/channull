@@ -32,13 +32,15 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+
   "ChanNullPostDAO" should {
     "Upsert properly" in {
       whenReady(userDAO.save(testUser)) {
         _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
+          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
             _ =>
-              whenReady(chanNullPostDAO.upsert(testUpsertChanNullPostRequest), Timeout(1.minute)) {
+              whenReady(chanNullPostDAO.upsert(testUpsertChanNullPostRequest)) {
                 upsertedPost =>
                   upsertedPost.children.isEmpty must be (true)
                   upsertedPost.reactions.isEmpty must be (true)
