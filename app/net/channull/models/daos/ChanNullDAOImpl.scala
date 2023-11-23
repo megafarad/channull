@@ -1,14 +1,12 @@
 package net.channull.models.daos
 
-import net.channull.models.{ ChanNullAccess, _ }
+import net.channull.models._
 import play.api.db.slick.DatabaseConfigProvider
 import PostgresProfile.api._
 
-import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import scala.collection.View
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
   extends ChanNullDAO with DAOSlick {
@@ -24,7 +22,7 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       case ByID(id) => chanNullTableQuery.filter(_.id === id)
       case ByName(name) => chanNullTableQuery.filter(_.name === name)
       case ByParentId(parentId) => chanNullTableQuery.filter(_.parentId === parentId)
-      case RandomPublic => randomPublicChanNullQuery.filter(_.parentId.isEmpty)
+      case RandomPublic => randomPublicChanNullQuery
     }
     for {
       (chanNull, createdByUser) <- filteredQuery join userTableQuery on (_.whoCreated === _.id)

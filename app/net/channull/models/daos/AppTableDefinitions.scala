@@ -1,7 +1,6 @@
 package net.channull.models.daos
 
-import net.channull.models.ReportStatus
-import net.channull.models.{ ChanNullAccess, ChanNullPostMedia, UserRole }
+import net.channull.models.{ChanNullAccess, ChanNullPermissions, ChanNullPostMedia, ReportStatus, UserRole}
 
 import java.time.Instant
 import java.util.UUID
@@ -43,7 +42,8 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullTableQuery = TableQuery[ChanNullTable]
 
-  val randomPublicChanNullQuery = chanNullTableQuery.filter(_.access === ChanNullAccess.Public).sortBy(_ => random).take(1)
+  val randomPublicChanNullQuery = chanNullTableQuery.filter(_.access === ChanNullAccess.Public)
+    .filter(_.parentId.isEmpty).sortBy(_ => random).take(1)
 
   case class ChanNullRuleRow(id: UUID, chanNullID: UUID, number: Short, rule: String, whenCreated: Instant,
     whoCreated: UUID)
@@ -62,10 +62,7 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullRuleTableQuery = TableQuery[ChanNullRuleTable]
 
-  case class ChanNullPermissionsRow(id: UUID, chanNullId: UUID, role: UserRole.Value, canPost: Boolean,
-    canSubPost: Boolean, canBan: Boolean)
-
-  class ChanNullPermissionsTable(tag: Tag) extends Table[ChanNullPermissionsRow](tag, Some("app"),
+  class ChanNullPermissionsTable(tag: Tag) extends Table[ChanNullPermissions](tag, Some("app"),
     "channull_permissions") {
     def id = column[UUID]("id", O.PrimaryKey)
     def chanNullId = column[UUID]("channull_id")
@@ -74,7 +71,8 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
     def canSubPost = column[Boolean]("can_subpost")
     def canBan = column[Boolean]("can_ban")
     def chanNull = foreignKey("app_channull_permissions_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
-    def * = (id, chanNullId, role, canPost, canSubPost, canBan).mapTo[ChanNullPermissionsRow]
+    def idx = index("app_channull_permissions_unique", (chanNullId, role), unique = true)
+    def * = (id, chanNullId, role, canPost, canSubPost, canBan).mapTo[ChanNullPermissions]
   }
 
   val chanNullPermissionsTableQuery = TableQuery[ChanNullPermissionsTable]

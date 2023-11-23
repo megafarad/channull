@@ -107,6 +107,7 @@ CREATE TABLE app.channull_permissions (
   can_post      BOOLEAN     NOT NULL,
   can_subpost   BOOLEAN     NOT NULL,
   can_ban       BOOLEAN     NOT NULL,
+  UNIQUE (channull_id, role),
   CONSTRAINT app_channull_permissions_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull(id)
 );
 

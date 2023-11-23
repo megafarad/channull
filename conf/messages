@@ -102,7 +102,7 @@ yahoo = Yahoo
 # Emails
 ##########
 
-email.from = Silhouette <noreply@automail.megafarad.com>
+email.from = ChanNull <noreply@automail.megafarad.com>
 
 # Sign Up
 email.sign.up.subject = Welcome
