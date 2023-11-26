@@ -77,17 +77,17 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullPermissionsTableQuery = TableQuery[ChanNullPermissionsTable]
 
-  case class ChanNullBanRow(id: UUID, chanNullId: UUID, userId: UUID, bannedBy: UUID, reason: String,
-    whenCreated: Instant, expiry: Instant)
+  case class ChanNullBanRow(id: UUID, chanNullId: UUID, userId: UUID, bannedBy: UUID, reason: Option[String],
+    whenCreated: Instant, expiry: Option[Instant])
 
   class ChanNullBanTable(tag: Tag) extends Table[ChanNullBanRow](tag, Some("app"), "channull_ban") {
     def id = column[UUID]("id", O.PrimaryKey)
     def chanNullId = column[UUID]("channull_id")
     def userId = column[UUID]("user_id")
     def bannedBy = column[UUID]("banned_by")
-    def reason = column[String]("reason")
+    def reason = column[Option[String]]("reason")
     def whenCreated = column[Instant]("when_created")
-    def expiry = column[Instant]("expiry")
+    def expiry = column[Option[Instant]]("expiry")
     def chanNull = foreignKey("app_channull_ban_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
     def bannedUser = foreignKey("app_channull_ban_user_id_fk", userId, userTableQuery)(_.id)
     def bannedByUser = foreignKey("app_channull_ban_banned_by_fk", bannedBy, userTableQuery)(_.id)

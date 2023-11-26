@@ -117,7 +117,7 @@ CREATE TABLE app.channull_ban (
   user_id           UUID        NOT NULL,
   banned_by         UUID        NOT NULL,
   reason            TEXT,
-  when_created      TIMESTAMPTZ,
+  when_created      TIMESTAMPTZ NOT NULL,
   expiry            TIMESTAMPTZ,
   CONSTRAINT app_channull_ban_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull (id),
   CONSTRAINT app_channull_ban_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id),
@@ -128,7 +128,7 @@ CREATE TABLE app.channull_ban_violated_rule (
   id                UUID        NOT NULL PRIMARY KEY,
   ban_id            UUID        NOT NULL,
   violated_rule_id  UUID        NOT NULL,
-  CONSTRAINT app_channull_ban_violated_rule_ban_id FOREIGN KEY (ban_id) REFERENCES app.channull_ban (id),
+  CONSTRAINT app_channull_ban_violated_rule_ban_id FOREIGN KEY (ban_id) REFERENCES app.channull_ban (id) ON DELETE CASCADE,
   CONSTRAINT app_channull_ban_violated_rule_rule_id FOREIGN KEY (violated_rule_id) REFERENCES app.channull_rule (id)
 );
 
