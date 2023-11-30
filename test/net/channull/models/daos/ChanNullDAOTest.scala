@@ -13,6 +13,7 @@ import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll with CommonTest {
 
@@ -34,49 +35,37 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
 
   "ChanNullDAO" should {
     "Upsert Properly" in {
-      whenReady(userDAO.save(testUser)) {
-        _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
-            _ =>
-              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
-                _ =>
-                  whenReady(chanNullDAO.get(testParentChanNullId)) {
-                    maybeChanNull =>
-                      maybeChanNull.isDefined must be(true)
-                      val chanNull = maybeChanNull.get
-                      chanNull.children.size must be(1)
-                  }
-              }
-          }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
+        maybeChanNull <- chanNullDAO.get(testParentChanNullId)
+      } yield {
+        maybeChanNull.isDefined must be(true)
+        val chanNull = maybeChanNull.get
+        chanNull.children.size must be(1)
       }
     }
 
     "Get ChanNull by name" in {
-      whenReady(userDAO.save(testUser)) {
-        _ => whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
-          _ => whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
-            _ => whenReady(chanNullDAO.get(testChildChanNullUpsertRequest.name)) {
-              maybeChanNull =>
-                maybeChanNull.isDefined must be(true)
-            }
-          }
-        }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
+        maybeChanNull <- chanNullDAO.get(testChildChanNullUpsertRequest.name)
+      } yield {
+        maybeChanNull.isDefined must be(true)
       }
     }
 
     "Get Random Public ChanNull (Surf)" in {
-      whenReady(userDAO.save(testUser)) {
-        _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest), Timeout(1.minute)) {
-            _ =>
-              whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest), Timeout(1.minute)) {
-                _ =>
-                  whenReady(chanNullDAO.getRandomPublic) {
-                    maybeChanNull =>
-                      maybeChanNull.isDefined must be(true)
-                  }
-              }
-          }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
+        maybeChanNull <- chanNullDAO.getRandomPublic
+      } yield {
+        maybeChanNull.isDefined must be (true)
       }
     }
   }

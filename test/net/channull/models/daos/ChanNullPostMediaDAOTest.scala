@@ -13,6 +13,7 @@ import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.UUID
 
 class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll 
@@ -44,36 +45,22 @@ class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with Sc
 
   "ChanNullPostMediaDAO" should {
     "Upsert and get properly" in {
-      whenReady(userDAO.save(testUser)) {
-        _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
-            _ =>
-              whenReady(chanNullPostDAO.upsert(testUpsertChanNullPostRequest)) {
-                _ =>
-                  whenReady(chanNullPostMediaDAO.upsert(testChanNullPostMedia)) {
-                    _ =>
-                      whenReady(chanNullPostMediaDAO.get(testChanNullPostMediaId)) {
-                        maybeChanNullPostMedia =>
-                          maybeChanNullPostMedia.isDefined must be(true)
-                          whenReady(chanNullPostMediaDAO.getMediaForPost(testChanNullPostID)) {
-                            mediaForPost =>
-                              mediaForPost.size must be(1)
-                          }
-                      }
-                  }
-              }
-          }
-      }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullPostDAO.upsert(testUpsertChanNullPostRequest)
+        _ <- chanNullPostMediaDAO.upsert(testChanNullPostMedia)
+        maybeChanNullPostMedia <- chanNullPostMediaDAO.get(testChanNullPostMediaId)
+        _ = maybeChanNullPostMedia.isDefined must be (true)
+        mediaForPost <- chanNullPostMediaDAO.getMediaForPost(testChanNullPostID)
+      } yield mediaForPost.size must be (1)
     }
 
     "Delete properly" in {
-      whenReady(chanNullPostMediaDAO.delete(testChanNullPostMediaId)) {
-        _ =>
-          whenReady(chanNullPostMediaDAO.get(testChanNullPostMediaId)) {
-            maybePostMedia =>
-              maybePostMedia.isDefined must be(false)
-          }
-      }
+      for {
+        _ <- chanNullPostMediaDAO.delete(testChanNullPostMediaId)
+        maybePostMedia <- chanNullPostMediaDAO.get(testChanNullPostMediaId)
+      } yield maybePostMedia.isDefined must be (false)
     }
   }
 

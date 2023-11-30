@@ -14,6 +14,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 
 import java.util.UUID
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ChanNullPermissionsDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
   with CommonTest {
@@ -41,18 +42,13 @@ class ChanNullPermissionsDAOTest extends PlaySpec with GuiceOneAppPerSuite with 
 
   "ChanNullPermissionsDAO" should {
     "Upsert and get properly" in {
-      whenReady(userDAO.save(testUser)) {
-        _ =>
-          whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
-            _ =>
-              whenReady(chanNullPermissionsDAO.upsert(testChanNullPermissions)) {
-                _ =>
-                  whenReady(chanNullPermissionsDAO.getByChanNullId(testParentChanNullId)) {
-                    permissions =>
-                      permissions.size must be(1)
-                  }
-              }
-          }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullPermissionsDAO.upsert(testChanNullPermissions)
+        chanNullPermissions <- chanNullPermissionsDAO.getByChanNullId(testParentChanNullId)
+      } yield {
+        chanNullPermissions.size must be(1)
       }
     }
   }

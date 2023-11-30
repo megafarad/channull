@@ -15,6 +15,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ChanNullBanDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
   with CommonTest {
@@ -73,20 +74,16 @@ class ChanNullBanDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFut
 
   "ChanNullBanDAO" should {
     "Upsert and get by ChanNullID properly" in {
-      whenReady(userDAO.save(testUser)) {
-        _ => whenReady(chanNullDAO.upsert(testParentChanNullUpsertRequest)) {
-          _ => whenReady(chanNullDAO.upsert(testChildChanNullUpsertRequest)) {
-            _ => whenReady(userDAO.save(testBanningUser)) {
-              _ => whenReady(userDAO.save(testBannedUser)) {
-                _ => whenReady(chanNullBanDAO.upsert(testUpsertChanNullBanRequest)) {
-                  _ => whenReady(chanNullBanDAO.getByChanNullId(testChanNullId)) {
-                    bans => bans.size must be(1)
-                  }
-                }
-              }
-            }
-          }
-        }
+      for {
+        _ <- userDAO.save(testUser)
+        _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
+        _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
+        _ <- userDAO.save(testBanningUser)
+        _ <- userDAO.save(testBannedUser)
+        _ <- chanNullBanDAO.upsert(testUpsertChanNullBanRequest)
+        bans <- chanNullBanDAO.getByChanNullId(testChanNullId)
+      } yield {
+        bans.size must be(1)
       }
     }
   }
