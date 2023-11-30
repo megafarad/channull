@@ -165,13 +165,13 @@ CREATE TABLE app.channull_post_reaction (
   CONSTRAINT app_channull_post_reaction_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id)
 );
 
-CREATE TABLE app.user_channull (
+CREATE TABLE app.channull_user (
   id                UUID        NOT NULL PRIMARY KEY,
-  user_id           UUID        NOT NULL,
   channull_id       UUID        NOT NULL,
+  user_id           UUID        NOT NULL,
   role              VARCHAR     NOT NULL,
-  CONSTRAINT app_user_channull_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id),
-  CONSTRAINT app_user_channull_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull (id)
+  CONSTRAINT app_channull_user_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull (id),
+  CONSTRAINT app_channull_user_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id)
 );
 
 CREATE TABLE app.report (
@@ -207,7 +207,7 @@ CREATE TABLE app.blocked_user (
 DROP TABLE app.blocked_user;
 DROP TABLE app.report_violated_rule;
 DROP TABLE app.report;
-DROP TABLE app.user_channull;
+DROP TABLE app.channull_user;
 DROP TABLE app.channull_post_media;
 DROP TABLE app.channull_post_reaction;
 DROP TABLE app.channull_permissions;

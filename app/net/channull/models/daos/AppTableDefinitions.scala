@@ -1,6 +1,6 @@
 package net.channull.models.daos
 
-import net.channull.models.{ChanNullAccess, ChanNullPermissions, ChanNullPostMedia, ReportStatus, UserRole}
+import net.channull.models._
 
 import java.time.Instant
 import java.util.UUID
@@ -158,19 +158,19 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullPostReactionTableQuery = TableQuery[ChanNullPostReactionTable]
 
-  case class UserChanNullRow(id: UUID, userId: UUID, chanNullId: UUID, role: UserRole.Value)
+  case class ChanNullUserRow(id: UUID, chanNullId: UUID, userId: UUID, role: UserRole.Value)
 
-  class UserChanNullTable(tag: Tag) extends Table[UserChanNullRow](tag, Some("app"), "user_channull") {
+  class ChanNullUserTable(tag: Tag) extends Table[ChanNullUserRow](tag, Some("app"), "channull_user") {
     def id = column[UUID]("id", O.PrimaryKey)
-    def userId = column[UUID]("user_id")
     def chanNullId = column[UUID]("channull_id")
+    def userId = column[UUID]("user_id")
     def role = column[UserRole.Value]("role")
-    def user = foreignKey("app_user_channull_user_id_fk", userId, userTableQuery)(_.id)
-    def chanNull = foreignKey("app_user_channull_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
-    def * = (id, userId, chanNullId, role).mapTo[UserChanNullRow]
+    def chanNull = foreignKey("app_channull_user_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
+    def user = foreignKey("app_channull_user_user_id_fk", userId, userTableQuery)(_.id)
+    def * = (id, chanNullId, userId, role).mapTo[ChanNullUserRow]
   }
 
-  val userChanNullTableQuery = TableQuery[UserChanNullTable]
+  val chanNullUserTableQuery = TableQuery[ChanNullUserTable]
 
   case class ReportRow(id: UUID, reporter: UUID, postId: UUID, report: String, timestamp: Instant,
     status: ReportStatus.Value)
