@@ -3,7 +3,8 @@ package net.channull.models.daos
 import io.github.honeycombcheesecake.play.silhouette.api.LoginInfo
 import io.github.honeycombcheesecake.play.silhouette.api.util.PasswordInfo
 import io.github.honeycombcheesecake.play.silhouette.impl.providers.GoogleTotpInfo
-import net.channull.models.User
+import net.channull.modules.JobModule
+import net.channull.test.util.CommonTest
 import org.scalatestplus.play.PlaySpec
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.BeforeAndAfterAll
@@ -13,10 +14,10 @@ import play.api.db.evolutions.Evolutions
 import play.api.db.DBApi
 import play.api.inject.guice.GuiceApplicationBuilder
 
-import java.time.Instant
-import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll {
+class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
+  with CommonTest {
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
     .configure("slick.dbs.default.profile" -> "slick.jdbc.PostgresProfile$")
@@ -24,23 +25,12 @@ class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with Scala
     .configure("slick.dbs.default.db.url" -> "jdbc:postgresql://localhost:5432/channulltest")
     .configure("slick.dbs.default.db.user" -> "postgres")
     .configure("slick.dbs.default.db.password" -> "postgres")
+    .disable[JobModule]
     .build()
 
   val userDAO: UserDAO = app.injector.instanceOf[UserDAO]
   val loginInfoDAO: LoginInfoDAO = app.injector.instanceOf[LoginInfoDAO]
   val googleTotpInfoDAO: GoogleTotpInfoDAO = app.injector.instanceOf[GoogleTotpInfoDAO]
-
-  val testUser: User = User(
-    UUID.randomUUID(),
-    "handle",
-    Some("firstName"),
-    Some("lastName"),
-    Some("fullName"),
-    Some("email@example.com"),
-    None,
-    None,
-    Instant.now(),
-    activated = true)
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
@@ -50,19 +40,14 @@ class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with Scala
       val googleTotpInfo = GoogleTotpInfo("key", Seq(PasswordInfo("hasher", "password", Some("salt"))))
       val loginInfo = LoginInfo("providerId", "providerKey")
 
-      whenReady(userDAO.save(testUser)) {
-        createdUser =>
-          whenReady(loginInfoDAO.saveUserLoginInfo(createdUser.userID, loginInfo)) {
-            _ =>
-              whenReady(googleTotpInfoDAO.add(loginInfo, googleTotpInfo)) { addedGoogleTotpInfo =>
-                googleTotpInfo must be(addedGoogleTotpInfo)
-                whenReady(googleTotpInfoDAO.find(loginInfo)) {
-                  foundGoogleTotpInfo => foundGoogleTotpInfo.isDefined must be(true)
-                }
-              }
+      for {
+        createdUser <- userDAO.save(testUser)
+        _ <- loginInfoDAO.saveUserLoginInfo(createdUser.userID, loginInfo)
+        addedGoogleTotpInfo <- googleTotpInfoDAO.add(loginInfo, googleTotpInfo)
+        _ = googleTotpInfo must be(addedGoogleTotpInfo)
+        foundGoogleTotpInfo <- googleTotpInfoDAO.find(loginInfo)
+      } yield foundGoogleTotpInfo.isDefined must be(true)
 
-          }
-      }
     }
   }
 
