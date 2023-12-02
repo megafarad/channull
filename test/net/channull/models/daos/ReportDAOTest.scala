@@ -7,11 +7,14 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.db.DBApi
+import play.api.db.evolutions.Evolutions
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ReportDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll with CommonTest {
@@ -29,6 +32,8 @@ class ReportDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures 
   val chanNullDAO: ChanNullDAO = app.injector.instanceOf[ChanNullDAO]
   val chanNullPostDAO: ChanNullPostDAO = app.injector.instanceOf[ChanNullPostDAO]
   val reportDAO: ReportDAO = app.injector.instanceOf[ReportDAO]
+
+  val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
   val reportedUser: User = User(
     UUID.randomUUID(),
@@ -66,11 +71,11 @@ class ReportDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures 
     ReportStatus.Pending
   )
 
-
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ReportDAO" should {
     "Upsert and get by ChanNullID properly" in {
-      for {
+      val futures = for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
@@ -81,6 +86,15 @@ class ReportDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures 
       } yield {
         reports.items.size must be(1)
       }
+      whenReady(futures) {
+        _ =>
+      }
     }
+  }
+
+  override def beforeAll(): Unit = {
+    Evolutions.cleanupEvolutions(databaseApi.database("default"))
+    Evolutions.applyEvolutions(databaseApi.database("default"))
+    super.beforeAll()
   }
 }

@@ -70,11 +70,11 @@ class ChanNullBanDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFut
     ))
   )
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullBanDAO" should {
     "Upsert and get by ChanNullID properly" in {
-      for {
+      val futures = for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
@@ -84,6 +84,9 @@ class ChanNullBanDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFut
         bans <- chanNullBanDAO.getByChanNullId(testChanNullId)
       } yield {
         bans.size must be(1)
+      }
+      whenReady(futures) {
+        _ =>
       }
     }
   }
