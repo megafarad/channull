@@ -13,6 +13,7 @@ class AppModule extends AbstractModule with ScalaModule {
     bind[ChanNullPermissionsDAO].to[ChanNullPermissionsDAOImpl]
     bind[ChanNullBanDAO].to[ChanNullBanDAOImpl]
     bind[ChanNullUserDAO].to[ChanNullUserDAOImpl]
+    bind[ReportDAO].to[ReportDAOImpl]
   }
 
 }

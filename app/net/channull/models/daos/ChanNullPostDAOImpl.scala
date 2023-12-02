@@ -84,6 +84,7 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
    * @return
    */
   private def deleteAction(id: UUID) = chanNullPostTableQuery.filter(_.id === id).delete
+
   private def addAction(upsertRequest: UpsertChanNullPostRequest) =
     chanNullPostTableQuery.insertOrUpdate(ChanNullPostRow(id = upsertRequest.id, parentId = upsertRequest.parentId,
       chanNullId = upsertRequest.chanNullId, text = upsertRequest.text, whenCreated = upsertRequest.whenCreated,

@@ -189,7 +189,7 @@ CREATE TABLE app.report_violated_rule (
   id                UUID    NOT NULL PRIMARY KEY,
   report_id         UUID    NOT NULL,
   violated_rule_id  UUID    NOT NULL,
-  CONSTRAINT app_report_violated_rule_report_id_fk FOREIGN KEY (report_id) REFERENCES app.report (id),
+  CONSTRAINT app_report_violated_rule_report_id_fk FOREIGN KEY (report_id) REFERENCES app.report (id) ON DELETE CASCADE,
   CONSTRAINT app_report_violated_rule_violated_rule_id FOREIGN KEY (violated_rule_id) references app.channull_rule (id)
 );
 
