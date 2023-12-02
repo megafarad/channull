@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 trait ChanNullUserDAO {
 
-  def getChanNullUsers(chanNullId: UUID): Future[Seq[ChanNullUser]]
+  def getChanNullUsers(chanNullId: UUID, page: Int, pageSize: Int): Future[Page[ChanNullUser]]
 
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser]
 

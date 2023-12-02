@@ -8,6 +8,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.db.DBApi
+import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import java.util.UUID
@@ -30,6 +32,8 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
   val chanNullDAO: ChanNullDAO = app.injector.instanceOf[ChanNullDAO]
   val chanNullUserDAO: ChanNullUserDAO = app.injector.instanceOf[ChanNullUserDAO]
 
+  val databaseApi: DBApi = app.injector.instanceOf[DBApi]
+
   val testUpsertChanNullUser: UpsertChanNullUserRequest = UpsertChanNullUserRequest(
     UUID.randomUUID(),
     testParentChanNullId,
@@ -41,15 +45,21 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
 
   "ChanNullUserDAO" should {
     "Upsert and get by ChanNullID properly" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullUserDAO.upsert(testUpsertChanNullUser)
-        chanNullUsers <- chanNullUserDAO.getChanNullUsers(testParentChanNullId)
+        chanNullUsers <- chanNullUserDAO.getChanNullUsers(testParentChanNullId, 0, 10)
       } yield {
-        chanNullUsers.size must be(1)
-      }
+        chanNullUsers.items.size must be(1)
+      }).futureValue
     }
+  }
+
+  override def beforeAll(): Unit = {
+    Evolutions.cleanupEvolutions(databaseApi.database("default"))
+    Evolutions.applyEvolutions(databaseApi.database("default"))
+    super.beforeAll()
   }
 
 }

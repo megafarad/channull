@@ -7,19 +7,18 @@ import play.api.db.slick.DatabaseConfigProvider
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
-                                    (implicit ec: ExecutionContext) extends ChanNullUserDAO with DAOSlick with Logging {
+class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullUserDAO with DAOSlick with Logging {
 
   private sealed trait ChanNullUserQuery
   private case class ById(id: UUID) extends ChanNullUserQuery
-  private case class ByChanNullId(chanNullId: UUID) extends ChanNullUserQuery
-  private def queryChanNullUsers(query: ChanNullUserQuery): Query[(ChanNullUserTable, UserTable),
-    (ChanNullUserRow, User), Seq] = {
+  private case class ByChanNullId(chanNullId: UUID, page: Int, pageSize: Int) extends ChanNullUserQuery
+  private def queryChanNullUsers(query: ChanNullUserQuery): Query[(ChanNullUserTable, UserTable), (ChanNullUserRow, User), Seq] = {
     val baseQuery = query match {
       case ById(id) => chanNullUserTableQuery.filter(_.id === id)
-      case ByChanNullId(chanNullId) => chanNullUserTableQuery.filter(_.chanNullId === chanNullId)
+      case ByChanNullId(chanNullId, page, pageSize) => chanNullUserTableQuery.filter(_.chanNullId === chanNullId)
+        .drop(page * pageSize).take(pageSize)
     }
     baseQuery.join(userTableQuery).on(_.userId === _.id)
   }
@@ -38,7 +37,10 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
 
   private def deleteAction(id: UUID) = chanNullUserTableQuery.filter(_.id === id).delete
 
-  def getChanNullUsers(chanNullId: UUID): Future[Seq[ChanNullUser]] = runQueryChanNullUsers(ByChanNullId(chanNullId))
+  def getChanNullUsers(chanNullId: UUID, page: Int, pageSize: Int): Future[Page[ChanNullUser]] = for {
+    items <- runQueryChanNullUsers(ByChanNullId(chanNullId, page, pageSize))
+    totalCount <- db.run(chanNullUserTableQuery.filter(_.chanNullId === chanNullId).length.result)
+  } yield Page(items, page = page, offset = page * pageSize, total = totalCount.toLong)
 
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser] = db.run(upsertAction(request)).flatMap {
     _ => runQueryChanNullUsers(ById(request.id)).map(_.head)
