@@ -9,6 +9,7 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.db.DBApi
+import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import java.time.Instant
@@ -30,7 +31,7 @@ class BlockedUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFut
   val userDAO: UserDAO = app.injector.instanceOf[UserDAO]
   val blockedUserDAO: BlockedUserDAO = app.injector.instanceOf[BlockedUserDAO]
 
-  val databaseAPI: DBApi = app.injector.instanceOf[DBApi]
+  val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
@@ -74,8 +75,14 @@ class BlockedUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFut
         _ <- userDAO.save(testBlockedUser)
         _ <- blockedUserDAO.upsert(testUpsertBlockedUserRequest)
         blockedUsers <- blockedUserDAO.getBlocks(testBlockingUser.userID)
-      } yield blockedUsers.size must be (1)).futureValue
+      } yield blockedUsers.size must be(1)).futureValue
     }
+  }
+
+  override def beforeAll(): Unit = {
+    Evolutions.cleanupEvolutions(databaseApi.database("default"))
+    Evolutions.applyEvolutions(databaseApi.database("default"))
+    super.beforeAll()
   }
 
 }
