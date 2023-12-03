@@ -47,35 +47,38 @@ class ChanNullPostDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
   "ChanNullPostDAO" should {
     "Upsert properly" in {
       whenReady(setupTestData) {
-        _ => whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
-          maybeChanNullPost =>
-            maybeChanNullPost.isDefined must be (true)
-            val post = maybeChanNullPost.get
-            post.children.size must be (2)
-        }
+        _ =>
+          whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
+            maybeChanNullPost =>
+              maybeChanNullPost.isDefined must be(true)
+              val post = maybeChanNullPost.get
+              post.children.size must be(2)
+          }
       }
     }
 
     "Delete properly" in {
       whenReady(setupTestData) {
-        _ => whenReady(chanNullPostDAO.delete(testChanNullPostID)) {
-          _ => whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
-            post =>
-              post.isDefined must be(false)
-              whenReady(chanNullPostDAO.getPost(testChildChanNullPostID)) {
-                childPost =>
-                  childPost.isDefined must be(false)
-                  whenReady(chanNullPostDAO.getPost(testSecondChildChanNullPostId)) {
-                    secondChildPost =>
-                      secondChildPost.isDefined must be(false)
-                      whenReady(chanNullPostDAO.getPost(testGrandChildChanNullPostID)) {
-                        grandchildPost =>
-                          grandchildPost.isDefined must be(false)
+        _ =>
+          whenReady(chanNullPostDAO.delete(testChanNullPostID)) {
+            _ =>
+              whenReady(chanNullPostDAO.getPost(testChanNullPostID)) {
+                post =>
+                  post.isDefined must be(false)
+                  whenReady(chanNullPostDAO.getPost(testChildChanNullPostID)) {
+                    childPost =>
+                      childPost.isDefined must be(false)
+                      whenReady(chanNullPostDAO.getPost(testSecondChildChanNullPostId)) {
+                        secondChildPost =>
+                          secondChildPost.isDefined must be(false)
+                          whenReady(chanNullPostDAO.getPost(testGrandChildChanNullPostID)) {
+                            grandchildPost =>
+                              grandchildPost.isDefined must be(false)
+                          }
                       }
                   }
               }
           }
-        }
       }
     }
   }

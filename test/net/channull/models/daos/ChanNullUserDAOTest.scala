@@ -41,7 +41,7 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
     UserRole.Admin
   )
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullUserDAO" should {
     "Upsert and get by ChanNullID properly" in {

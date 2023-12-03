@@ -7,11 +7,10 @@ import play.api.Logging
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullPostMediaDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
-                                         (implicit ec: ExecutionContext) extends ChanNullPostMediaDAO with DAOSlick
-                                         with Logging {
+class ChanNullPostMediaDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPostMediaDAO with DAOSlick
+  with Logging {
   private def queryById(id: UUID) = chanNullPostMediaTableQuery.filter(_.id === id)
 
   private def queryByPostId(postId: UUID) = chanNullPostMediaTableQuery.filter(_.postId === postId)

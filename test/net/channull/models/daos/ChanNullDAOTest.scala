@@ -31,11 +31,11 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullDAO" should {
     "Upsert Properly" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
@@ -44,29 +44,29 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
         maybeChanNull.isDefined must be(true)
         val chanNull = maybeChanNull.get
         chanNull.children.size must be(1)
-      }
+      }).futureValue
     }
 
     "Get ChanNull by name" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
         maybeChanNull <- chanNullDAO.get(testChildChanNullUpsertRequest.name)
       } yield {
         maybeChanNull.isDefined must be(true)
-      }
+      }).futureValue
     }
 
     "Get Random Public ChanNull (Surf)" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullDAO.upsert(testChildChanNullUpsertRequest)
         maybeChanNull <- chanNullDAO.getRandomPublic
       } yield {
-        maybeChanNull.isDefined must be (true)
-      }
+        maybeChanNull.isDefined must be(true)
+      }).futureValue
     }
   }
 

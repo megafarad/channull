@@ -6,10 +6,9 @@ import PostgresProfile.api._
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullPermissionsDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
-                                           (implicit ec: ExecutionContext) extends ChanNullPermissionsDAO with DAOSlick {
+class ChanNullPermissionsDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPermissionsDAO with DAOSlick {
 
   private def getByChanNullIdQuery(chanNullId: UUID) = chanNullPermissionsTableQuery.filter(_.chanNullId === chanNullId)
 

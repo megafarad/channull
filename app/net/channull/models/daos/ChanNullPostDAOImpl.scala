@@ -7,10 +7,9 @@ import play.api.Logging
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
-                                    (implicit ec: ExecutionContext) extends ChanNullPostDAO with DAOSlick with Logging {
+class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPostDAO with DAOSlick with Logging {
 
   private sealed trait ChanNullPostQuery
   private case class ByID(id: UUID) extends ChanNullPostQuery
@@ -39,7 +38,6 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   private def totalChanNullPostsQuery(chanNullName: String) = chanNullTableQuery.filter(_.name === chanNullName)
     .join(chanNullPostTableQuery).on(_.id === _.chanNullId).map(_._2)
 
-
   private def postRowWithReactions(postQuery: ChanNullPostQuery) = {
 
     val reactionsQuery = chanNullPostReactionTableQuery.join(userTableQuery).on(_.userId === _.id)
@@ -48,23 +46,23 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       .joinLeft(reactionsQuery).on(_._1 === _._1.postId).sortBy(_._1._5)
 
     baseQuery.result.map { rows =>
-        rows.groupBy {
-          case (postFields, _) => postFields
-        }.view.mapValues(values => values.flatMap {
-          case (_, Some((reaction, reactBy))) => Seq((reaction, reactBy))
-          case (_, None) => Nil
-        })
-      }.map {
-        result =>
-          result map {
-            case ((postId, parentPostId, chanNullId, postText, whenCreated, createdBy, expiry), reactionFields) =>
-              val reactions = reactionFields.map {
-                case (reaction, reactionCreatedBy) => ChanNullPostReaction(reaction.id, reaction.postId,
-                  reactionCreatedBy, reaction.reactionType)
-              }
-              (postId, parentPostId, chanNullId, postText, whenCreated, createdBy, expiry, reactions)
-          }
-      }
+      rows.groupBy {
+        case (postFields, _) => postFields
+      }.view.mapValues(values => values.flatMap {
+        case (_, Some((reaction, reactBy))) => Seq((reaction, reactBy))
+        case (_, None) => Nil
+      })
+    }.map {
+      result =>
+        result map {
+          case ((postId, parentPostId, chanNullId, postText, whenCreated, createdBy, expiry), reactionFields) =>
+            val reactions = reactionFields.map {
+              case (reaction, reactionCreatedBy) => ChanNullPostReaction(reaction.id, reaction.postId,
+                reactionCreatedBy, reaction.reactionType)
+            }
+            (postId, parentPostId, chanNullId, postText, whenCreated, createdBy, expiry, reactions)
+        }
+    }
   }
 
   private def getPostsRecursive(query: ChanNullPostQuery): Future[Seq[ChanNullPost]] = db.run(postRowWithReactions(query)).flatMap {
@@ -89,7 +87,6 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     chanNullPostTableQuery.insertOrUpdate(ChanNullPostRow(id = upsertRequest.id, parentId = upsertRequest.parentId,
       chanNullId = upsertRequest.chanNullId, text = upsertRequest.text, whenCreated = upsertRequest.whenCreated,
       whoCreated = upsertRequest.whoCreated, expiry = upsertRequest.expiry))
-
 
   def getPosts(chanNullName: String, page: Int, pageSize: Int): Future[Page[ChanNullPost]] = for {
     posts <- getPostsRecursive(NullParent(chanNullName, page, pageSize))

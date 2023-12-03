@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.UUID
 
-class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll 
+class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
   with CommonTest {
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
@@ -27,40 +27,40 @@ class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with Sc
     .configure("slick.dbs.default.db.password" -> "postgres")
     .disable[JobModule]
     .build()
-  
+
   val userDAO: UserDAO = app.injector.instanceOf[UserDAO]
   val chanNullDAO: ChanNullDAO = app.injector.instanceOf[ChanNullDAO]
   val chanNullPostDAO: ChanNullPostDAO = app.injector.instanceOf[ChanNullPostDAO]
   val chanNullPostMediaDAO: ChanNullPostMediaDAO = app.injector.instanceOf[ChanNullPostMediaDAO]
-  
+
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
-  
+
   val testChanNullPostMediaId: UUID = UUID.randomUUID()
   val testChanNullPostMedia: ChanNullPostMedia = ChanNullPostMedia(
     id = testChanNullPostMediaId, postId = testChanNullPostID, altText = Some("altText"), contentType = "image/png",
     contentUrl = "https://example.com/test.png", contentSize = 100
   )
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullPostMediaDAO" should {
     "Upsert and get properly" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullPostDAO.upsert(testUpsertChanNullPostRequest)
         _ <- chanNullPostMediaDAO.upsert(testChanNullPostMedia)
         maybeChanNullPostMedia <- chanNullPostMediaDAO.get(testChanNullPostMediaId)
-        _ = maybeChanNullPostMedia.isDefined must be (true)
+        _ = maybeChanNullPostMedia.isDefined must be(true)
         mediaForPost <- chanNullPostMediaDAO.getMediaForPost(testChanNullPostID)
-      } yield mediaForPost.size must be (1)
+      } yield mediaForPost.size must be(1)).futureValue
     }
 
     "Delete properly" in {
-      for {
+      (for {
         _ <- chanNullPostMediaDAO.delete(testChanNullPostMediaId)
         maybePostMedia <- chanNullPostMediaDAO.get(testChanNullPostMediaId)
-      } yield maybePostMedia.isDefined must be (false)
+      } yield maybePostMedia.isDefined must be(false)).futureValue
     }
   }
 
@@ -69,5 +69,5 @@ class ChanNullPostMediaDAOTest extends PlaySpec with GuiceOneAppPerSuite with Sc
     Evolutions.applyEvolutions(databaseApi.database("default"))
     super.beforeAll()
   }
-  
+
 }

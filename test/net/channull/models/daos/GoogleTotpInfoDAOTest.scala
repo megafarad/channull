@@ -15,6 +15,7 @@ import play.api.db.DBApi
 import play.api.inject.guice.GuiceApplicationBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll
   with CommonTest {
@@ -34,19 +35,21 @@ class GoogleTotpInfoDAOTest extends PlaySpec with GuiceOneAppPerSuite with Scala
 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
+
   "GoogleTotpInfoDAO" should {
     "add properly" in {
 
       val googleTotpInfo = GoogleTotpInfo("key", Seq(PasswordInfo("hasher", "password", Some("salt"))))
       val loginInfo = LoginInfo("providerId", "providerKey")
 
-      for {
+      (for {
         createdUser <- userDAO.save(testUser)
         _ <- loginInfoDAO.saveUserLoginInfo(createdUser.userID, loginInfo)
         addedGoogleTotpInfo <- googleTotpInfoDAO.add(loginInfo, googleTotpInfo)
         _ = googleTotpInfo must be(addedGoogleTotpInfo)
         foundGoogleTotpInfo <- googleTotpInfoDAO.find(loginInfo)
-      } yield foundGoogleTotpInfo.isDefined must be(true)
+      } yield foundGoogleTotpInfo.isDefined must be(true)).futureValue
 
     }
   }

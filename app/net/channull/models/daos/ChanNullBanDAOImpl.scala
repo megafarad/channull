@@ -7,10 +7,9 @@ import play.api.db.slick.DatabaseConfigProvider
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)
-                                   (implicit ec: ExecutionContext) extends ChanNullBanDAO with DAOSlick with Logging {
+class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullBanDAO with DAOSlick with Logging {
 
   private sealed trait ChanNullBanQuery
   private case class ById(id: UUID) extends ChanNullBanQuery
@@ -47,17 +46,18 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
   }
 
   private def getBans(query: ChanNullBanQuery): Future[Seq[ChanNullBan]] = db.run(banRowsWithViolatedRules(query)).map {
-    view => view.toSeq.map {
-      case ((banId, banChanNullId, bannedUser, bannedByUser, reason, whenCreated, expiry), violatedRulesRows) =>
-        val violatedRules = violatedRulesRows.map {
-          case ((_, ruleRow), createdBy) =>
-            ChanNullRule(id = ruleRow.id, chanNullId = ruleRow.chanNullID, number = ruleRow.number, rule = ruleRow.rule,
-              whenCreated = ruleRow.whenCreated, whoCreated = createdBy)
-        }
-        ChanNullBan(
-          id = banId, chanNullId = banChanNullId, user = bannedUser, bannedBy = bannedByUser, reason = reason,
-          whenCreated = whenCreated, expiry = expiry, violatedRules = violatedRules)
-    }
+    view =>
+      view.toSeq.map {
+        case ((banId, banChanNullId, bannedUser, bannedByUser, reason, whenCreated, expiry), violatedRulesRows) =>
+          val violatedRules = violatedRulesRows.map {
+            case ((_, ruleRow), createdBy) =>
+              ChanNullRule(id = ruleRow.id, chanNullId = ruleRow.chanNullID, number = ruleRow.number, rule = ruleRow.rule,
+                whenCreated = ruleRow.whenCreated, whoCreated = createdBy)
+          }
+          ChanNullBan(
+            id = banId, chanNullId = banChanNullId, user = bannedUser, bannedBy = bannedByUser, reason = reason,
+            whenCreated = whenCreated, expiry = expiry, violatedRules = violatedRules)
+      }
   }
 
   def upsert(request: UpsertChanNullBanRequest): Future[ChanNullBan] = {
@@ -65,9 +65,10 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
       id = request.id, chanNullId = request.chanNullId, userId = request.userId, bannedBy = request.bannedByUserId,
       reason = request.reason, whenCreated = request.whenCreated, expiry = request.expiry))
     val upsertViolatedRulesActions = request.violatedRules map {
-      upsertRequest => chanNullBanViolatedRuleTableQuery.insertOrUpdate(ChanNullBanViolatedRuleRow(
-        id = upsertRequest.id, banId = request.id, violatedRuleId = upsertRequest.violatedRuleId
-      ))
+      upsertRequest =>
+        chanNullBanViolatedRuleTableQuery.insertOrUpdate(ChanNullBanViolatedRuleRow(
+          id = upsertRequest.id, banId = request.id, violatedRuleId = upsertRequest.violatedRuleId
+        ))
     }
     db.run(DBIO.sequence(upsertRowAction +: upsertViolatedRulesActions).transactionally).flatMap {
       _ => getBans(ById(request.id)).map(_.head)

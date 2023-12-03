@@ -1,6 +1,6 @@
 package net.channull.models.daos
 
-import net.channull.models.{ChanNullPermissions, UserRole}
+import net.channull.models.{ ChanNullPermissions, UserRole }
 import net.channull.modules.JobModule
 import net.channull.test.util.CommonTest
 import org.scalatest.BeforeAndAfterAll
@@ -35,21 +35,22 @@ class ChanNullPermissionsDAOTest extends PlaySpec with GuiceOneAppPerSuite with 
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
   val testChanNullPermissionsId: UUID = UUID.randomUUID()
-  val testChanNullPermissions: ChanNullPermissions = ChanNullPermissions(id = testChanNullPermissionsId,
+  val testChanNullPermissions: ChanNullPermissions = ChanNullPermissions(
+    id = testChanNullPermissionsId,
     chanNullId = testParentChanNullId, role = UserRole.User, canPost = true, canSubPost = true, canBan = false)
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(500.millis))
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullPermissionsDAO" should {
     "Upsert and get properly" in {
-      for {
+      (for {
         _ <- userDAO.save(testUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullPermissionsDAO.upsert(testChanNullPermissions)
         chanNullPermissions <- chanNullPermissionsDAO.getByChanNullId(testParentChanNullId)
       } yield {
         chanNullPermissions.size must be(1)
-      }
+      }).futureValue
     }
   }
 

@@ -6,7 +6,7 @@ import PostgresProfile.api._
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
   extends ChanNullDAO with DAOSlick {
@@ -38,33 +38,34 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       .joinLeft(rulesQuery).on(_._1 === _._1.chanNullId)
 
     baseQuery.result.map { rows =>
-        rows.groupBy {
-          case (chanNullFields, _) => chanNullFields
-        }.view.mapValues(values => values.flatMap {
-          case (_, Some((rules, rulesCreatedBy))) => Seq((rules, rulesCreatedBy))
-          case (_, None) => Nil
-        })
-      }.map {
-        result =>
-          result map {
-            case ((id, parentId, name, createdBy, description, whenCreated, access), rulesFields) =>
-              val chanNullRules = rulesFields.map {
-                case (rule, createdByUser) => ChanNullRule(rule.id, rule.chanNullID, rule.number,
-                  rule.rule, rule.whenCreated, createdByUser)
-              }
-              (id, parentId, name, createdBy, description, whenCreated, access, chanNullRules)
-          }
-      }
+      rows.groupBy {
+        case (chanNullFields, _) => chanNullFields
+      }.view.mapValues(values => values.flatMap {
+        case (_, Some((rules, rulesCreatedBy))) => Seq((rules, rulesCreatedBy))
+        case (_, None) => Nil
+      })
+    }.map {
+      result =>
+        result map {
+          case ((id, parentId, name, createdBy, description, whenCreated, access), rulesFields) =>
+            val chanNullRules = rulesFields.map {
+              case (rule, createdByUser) => ChanNullRule(rule.id, rule.chanNullID, rule.number,
+                rule.rule, rule.whenCreated, createdByUser)
+            }
+            (id, parentId, name, createdBy, description, whenCreated, access, chanNullRules)
+        }
+    }
 
   }
   private def getChanNullRecursive(query: ChanNullQuery): Future[Seq[ChanNull]] = db.run(chanNullRowWithRules(query))
     .flatMap {
-      view => Future.sequence(view.toSeq.map{
-        case (id, _, name, createdBy, description, whenCreated, access, chanNullRules) =>
-          getChanNullRecursive(ByParentId(id)) map {
-            children => ChanNull(id, name, createdBy, description, chanNullRules, whenCreated, access, children)
-          }
-      })
+      view =>
+        Future.sequence(view.toSeq.map {
+          case (id, _, name, createdBy, description, whenCreated, access, chanNullRules) =>
+            getChanNullRecursive(ByParentId(id)) map {
+              children => ChanNull(id, name, createdBy, description, chanNullRules, whenCreated, access, children)
+            }
+        })
 
     }
 

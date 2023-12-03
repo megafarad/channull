@@ -6,7 +6,7 @@ import PostgresProfile.api._
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ReportDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext)
   extends ReportDAO with DAOSlick {
@@ -44,15 +44,16 @@ class ReportDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigPro
   }
 
   private def getReports(query: ReportQuery) = db.run(reportsWithViolatedRules(query)).map {
-    view => view.toSeq.map {
-      case ((reportRow, reporterUser), violatedRulesRows) =>
-        val violatedRules = violatedRulesRows.map {
-          case ((_,ruleRow), user) => ChanNullRule(ruleRow.id, ruleRow.chanNullID, ruleRow.number, ruleRow.rule,
-            ruleRow.whenCreated, user)
-        }
-        Report(reportRow.id, reporterUser, reportRow.postId, reportRow.report, violatedRules, reportRow.timestamp,
-          reportRow.status)
-    }
+    view =>
+      view.toSeq.map {
+        case ((reportRow, reporterUser), violatedRulesRows) =>
+          val violatedRules = violatedRulesRows.map {
+            case ((_, ruleRow), user) => ChanNullRule(ruleRow.id, ruleRow.chanNullID, ruleRow.number, ruleRow.rule,
+              ruleRow.whenCreated, user)
+          }
+          Report(reportRow.id, reporterUser, reportRow.postId, reportRow.report, violatedRules, reportRow.timestamp,
+            reportRow.status)
+      }
   }
 
   private def totalReportsQuery(chanNullId: UUID) = chanNullPostTableQuery.filter(_.chanNullId === chanNullId)
@@ -69,9 +70,10 @@ class ReportDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigPro
       request.id, request.reporterId, request.postId, request.report, request.timestamp, request.status
     ))
     val upsertViolatedRulesActions = request.violatedRules map {
-      upsertRequest => reportViolatedRuleTableQuery.insertOrUpdate(ReportViolatedRuleRow(
-        upsertRequest.id, request.id, upsertRequest.violatedRuleId
-      ))
+      upsertRequest =>
+        reportViolatedRuleTableQuery.insertOrUpdate(ReportViolatedRuleRow(
+          upsertRequest.id, request.id, upsertRequest.violatedRuleId
+        ))
     }
     db.run(DBIO.sequence(upsertRowAction +: upsertViolatedRulesActions).transactionally).flatMap {
       _ => getReports(ById(request.id)).map(_.head)

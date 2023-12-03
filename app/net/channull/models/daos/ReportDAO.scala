@@ -11,5 +11,4 @@ trait ReportDAO {
 
   def upsert(request: UpsertReportRequest): Future[Report]
 
-
 }
