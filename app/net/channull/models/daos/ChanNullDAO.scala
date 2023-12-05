@@ -11,6 +11,8 @@ trait ChanNullDAO {
 
   def get(name: String): Future[Option[ChanNull]]
 
+  def search(nameContains: String, page: Int, pageSize: Int): Future[Page[ChanNull]]
+
   def getRandomPublic: Future[Option[ChanNull]]
 
   def upsert(request: UpsertChanNullRequest): Future[ChanNull]

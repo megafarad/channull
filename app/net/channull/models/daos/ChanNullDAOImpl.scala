@@ -15,6 +15,7 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
   private case class ByID(id: UUID) extends ChanNullQuery
   private case class ByParentId(parentId: UUID) extends ChanNullQuery
   private case class ByName(name: String) extends ChanNullQuery
+  private case class SearchByName(nameContains: String, page: Int, pageSize: Int) extends ChanNullQuery
   private case object RandomPublic extends ChanNullQuery
 
   private def chanNullRowQuery(query: ChanNullQuery) = {
@@ -22,6 +23,9 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       case ByID(id) => chanNullTableQuery.filter(_.id === id)
       case ByName(name) => chanNullTableQuery.filter(_.name === name)
       case ByParentId(parentId) => chanNullTableQuery.filter(_.parentId === parentId)
+      case SearchByName(nameContains, page, pageSize) =>
+        val offset = page * pageSize
+        chanNullTableQuery.filter(_.name like s"%$nameContains%").drop(offset).take(pageSize)
       case RandomPublic => randomPublicChanNullQuery
     }
     for {
@@ -90,4 +94,12 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
       _ => get(request.id).map(_.get) //Should be a safe get. We just inserted the record...
     }
   }
+
+  private def getTotalMatches(nameContains: String) = chanNullTableQuery.filter(_.name like s"%$nameContains%")
+    .length.result
+
+  def search(nameContains: String, page: Int, pageSize: Int): Future[Page[ChanNull]] = for {
+    items <- getChanNullRecursive(SearchByName(nameContains, page, pageSize))
+    totalMatches <- db.run(getTotalMatches(nameContains))
+  } yield Page(items, page, page * pageSize, totalMatches.toLong)
 }
