@@ -7,7 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Application, Logging}
+import play.api.Application
 import play.api.db.DBApi
 import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll with CommonTest with Logging {
+class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFutures with BeforeAndAfterAll with CommonTest {
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
     .configure("slick.dbs.default.profile" -> "slick.jdbc.PostgresProfile$")
@@ -76,7 +76,6 @@ class ChanNullDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFuture
 
       whenReady(foundChanNulls) {
         chanNullsPage =>
-          logger.info(chanNullsPage.toString)
           chanNullsPage.items.size must be (2)
       }
     }
