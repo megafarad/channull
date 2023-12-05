@@ -6,7 +6,7 @@ import play.api.db.slick.DatabaseConfigProvider
 
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class BlockedUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends BlockedUserDAO with DAOSlick {
 

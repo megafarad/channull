@@ -27,7 +27,7 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     chanNullUsers =>
       chanNullUsers map {
         case (chanNullUserFields, user) => ChanNullUser(chanNullUserFields.id, chanNullUserFields.chanNullId, user,
-          chanNullUserFields.role)
+          chanNullUserFields.role, chanNullUserFields.lastReadMessageId)
       }
   }
 
