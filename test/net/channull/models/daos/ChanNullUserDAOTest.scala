@@ -38,7 +38,8 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
     UUID.randomUUID(),
     testParentChanNullId,
     testUser.userID,
-    UserRole.Admin
+    UserRole.Admin,
+    None
   )
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))

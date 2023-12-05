@@ -166,10 +166,11 @@ CREATE TABLE app.channull_post_reaction (
 );
 
 CREATE TABLE app.channull_user (
-  id                UUID        NOT NULL PRIMARY KEY,
-  channull_id       UUID        NOT NULL,
-  user_id           UUID        NOT NULL,
-  role              VARCHAR     NOT NULL,
+  id                    UUID        NOT NULL PRIMARY KEY,
+  channull_id           UUID        NOT NULL,
+  user_id               UUID        NOT NULL,
+  role                  VARCHAR     NOT NULL,
+  last_read_message_id  UUID,
   CONSTRAINT app_channull_user_channull_id_fk FOREIGN KEY (channull_id) REFERENCES app.channull (id),
   CONSTRAINT app_channull_user_user_id_fk FOREIGN KEY (user_id) REFERENCES auth.user (id)
 );

@@ -32,7 +32,7 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   }
 
   private def upsertAction(request: UpsertChanNullUserRequest) = chanNullUserTableQuery.insertOrUpdate(
-    ChanNullUserRow(request.id, request.chanNullId, request.userId, request.role)
+    ChanNullUserRow(request.id, request.chanNullId, request.userId, request.role, request.lastReadMessageId)
   )
 
   private def deleteAction(id: UUID) = chanNullUserTableQuery.filter(_.id === id).delete
