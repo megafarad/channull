@@ -11,21 +11,39 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPostDAO with DAOSlick with Logging {
 
-  private sealed trait ChanNullPostQuery
-  private case class ByID(id: UUID) extends ChanNullPostQuery
-  private case class ByParentID(id: UUID) extends ChanNullPostQuery
-  private case class NullParent(chanNullName: String, page: Int, pageSize: Int) extends ChanNullPostQuery
+  private sealed trait ChanNullPostQuery {
+    val loggedInUserId: Option[UUID]
+  }
+  private case class ByID(id: UUID, loggedInUserId: Option[UUID]) extends ChanNullPostQuery
+  private case class ByParentID(id: UUID, loggedInUserId: Option[UUID]) extends ChanNullPostQuery
+  private case class NullParent(chanNullName: String, loggedInUserId: Option[UUID], page: Int, pageSize: Int)
+    extends ChanNullPostQuery
+
+
 
   private def postRowQuery(postQuery: ChanNullPostQuery) = {
     val filteredQuery: Query[ChanNullPostTable, ChanNullPostRow, Seq] = postQuery match {
-      case ByID(id) => chanNullPostTableQuery.filter(_.id === id)
-      case ByParentID(parentID) => chanNullPostTableQuery.filter(_.parentId === parentID)
-      case NullParent(chanNullName, page, pageSize) =>
+      case ByID(id, loggedInUserId) =>
+        val baseQuery = chanNullPostTableQuery.filter(_.id === id)
+        loggedInUserId match {
+          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
+          case None => baseQuery
+        }
+      case ByParentID(parentID, loggedInUserId) =>
+        val baseQuery = chanNullPostTableQuery.filter(_.parentId === parentID)
+        loggedInUserId match {
+          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
+          case None => baseQuery
+        }
+      case NullParent(chanNullName, loggedInUserId, page, pageSize) =>
         val offset = page * pageSize
-
-        chanNullTableQuery.filter(_.name === chanNullName).join(chanNullPostTableQuery)
+        val baseQuery = chanNullTableQuery.filter(_.name === chanNullName).join(chanNullPostTableQuery)
           .on(_.id === _.chanNullId).filter(_._2.parentId.isEmpty).drop(offset).take(pageSize)
           .map(_._2)
+        loggedInUserId match {
+          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
+          case None => baseQuery
+        }
     }
 
     filteredQuery.join(userTableQuery).on(_.whoCreated === _.id)
@@ -35,8 +53,20 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
             postTable.expiry)
       }
   }
-  private def totalChanNullPostsQuery(chanNullName: String) = chanNullTableQuery.filter(_.name === chanNullName)
-    .join(chanNullPostTableQuery).on(_.id === _.chanNullId).map(_._2)
+
+  private def isBlocked(retrievingUserId: UUID, post: ChanNullPostTable) = {
+    post.whoCreated in blockedUserTableQuery.filter(blockedUser => blockedUser.blockedUserId ===
+      retrievingUserId).map(_.blockingUserId)
+  }
+
+  private def totalChanNullPostsQuery(chanNullName: String, loggedInUserId: Option[UUID]) = {
+    val baseQuery = chanNullTableQuery.filter(_.name === chanNullName)
+      .join(chanNullPostTableQuery).on(_.id === _.chanNullId).map(_._2)
+    loggedInUserId match {
+      case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
+      case None => baseQuery
+    }
+  }
 
   private def postRowWithReactions(postQuery: ChanNullPostQuery) = {
 
@@ -69,7 +99,7 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     view =>
       Future.sequence(view.toSeq.map {
         case (postId, _, chanNullId, postText, whenCreated, createdBy, expiry, reactions) =>
-          getPostsRecursive(ByParentID(postId)) map {
+          getPostsRecursive(ByParentID(postId, query.loggedInUserId)) map {
             children => ChanNullPost(postId, chanNullId, postText, reactions, whenCreated, createdBy, expiry, children)
           }
       })
@@ -88,17 +118,18 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       chanNullId = upsertRequest.chanNullId, text = upsertRequest.text, whenCreated = upsertRequest.whenCreated,
       whoCreated = upsertRequest.whoCreated, expiry = upsertRequest.expiry))
 
-  def getPosts(chanNullName: String, page: Int, pageSize: Int): Future[Page[ChanNullPost]] = for {
-    posts <- getPostsRecursive(NullParent(chanNullName, page, pageSize))
-    totalCount <- db.run(totalChanNullPostsQuery(chanNullName).length.result)
+  def getPosts(chanNullName: String, loggedInUserId: Option[UUID], page: Int, pageSize: Int): Future[Page[ChanNullPost]] = for {
+    posts <- getPostsRecursive(NullParent(chanNullName, loggedInUserId, page, pageSize))
+    totalCount <- db.run(totalChanNullPostsQuery(chanNullName, loggedInUserId).length.result)
   } yield Page(posts, page, page * pageSize, totalCount.toLong)
 
-  def getPost(postId: UUID): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(postId)).map(_.headOption)
+  def getPost(postId: UUID, loggedInUserId: Option[UUID]): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(postId,
+    loggedInUserId)).map(_.headOption)
 
   def upsert(upsertRequest: UpsertChanNullPostRequest): Future[ChanNullPost] = db.run(addAction(upsertRequest))
     .flatMap {
       _ =>
-        getPost(upsertRequest.id).map(_.get)
+        getPost(upsertRequest.id, None).map(_.get)
     }
 
   def delete(postId: UUID): Future[Unit] = db.run(deleteAction(postId)).map(_ => ())
