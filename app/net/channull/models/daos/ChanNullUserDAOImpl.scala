@@ -12,11 +12,11 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullUserDAO with DAOSlick with Logging {
 
   private sealed trait ChanNullUserQuery
-  private case class ById(id: UUID) extends ChanNullUserQuery
+  private case class ByChanNullAndUserId(userId: UUID, chanNullId: UUID) extends ChanNullUserQuery
   private case class ByChanNullId(chanNullId: UUID, page: Int, pageSize: Int) extends ChanNullUserQuery
   private def queryChanNullUsers(query: ChanNullUserQuery): Query[(ChanNullUserTable, UserTable), (ChanNullUserRow, User), Seq] = {
     val baseQuery = query match {
-      case ById(id) => chanNullUserTableQuery.filter(_.id === id)
+      case ByChanNullAndUserId(userId, chanNullId) => chanNullUserTableQuery.filter(tbl => tbl.userId === userId && tbl.chanNullId === chanNullId)
       case ByChanNullId(chanNullId, page, pageSize) => chanNullUserTableQuery.filter(_.chanNullId === chanNullId)
         .drop(page * pageSize).take(pageSize)
     }
@@ -26,16 +26,16 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   private def runQueryChanNullUsers(query: ChanNullUserQuery) = db.run(queryChanNullUsers(query).result).map {
     chanNullUsers =>
       chanNullUsers map {
-        case (chanNullUserFields, user) => ChanNullUser(chanNullUserFields.id, chanNullUserFields.chanNullId, user,
-          chanNullUserFields.role, chanNullUserFields.lastReadMessageId)
+        case (chanNullUserFields, user) => ChanNullUser(chanNullUserFields.chanNullId, user, chanNullUserFields.role,
+          chanNullUserFields.lastReadMessageId)
       }
   }
 
   private def upsertAction(request: UpsertChanNullUserRequest) = chanNullUserTableQuery.insertOrUpdate(
-    ChanNullUserRow(request.id, request.chanNullId, request.userId, request.role, request.lastReadMessageId)
+    ChanNullUserRow(request.chanNullId, request.userId, request.role, request.lastReadMessageId)
   )
 
-  private def deleteAction(id: UUID) = chanNullUserTableQuery.filter(_.id === id).delete
+  private def deleteAction(userId: UUID, chanNullId: UUID) = chanNullUserTableQuery.filter(tbl => tbl.userId === userId && tbl.chanNullId === chanNullId).delete
 
   /**
    * Gets a paginated list of users for a ChanNull
@@ -57,14 +57,15 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
    * @return A Future of ChanNullUser representing the upserted ChanNullUser.
    */
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser] = db.run(upsertAction(request)).flatMap {
-    _ => runQueryChanNullUsers(ById(request.id)).map(_.head)
+    _ => runQueryChanNullUsers(ByChanNullAndUserId(request.userId, request.chanNullId)).map(_.head)
   }
 
   /**
-   * Deletes the ChanNullUser with the specified ID.
+   * Deletes a user with the given userId and ChanNull with the given chanNullId.
    *
-   * @param id The UUID of the item to delete.
-   * @return A Future[Unit] representing the completion of the delete operation.
+   * @param userId     The UUID of the user to be deleted.
+   * @param chanNullId The UUID of the ChanNull to be deleted.
+   * @return A Future that completes when the deletion is successful.
    */
-  def delete(id: UUID): Future[Unit] = db.run(deleteAction(id)).map(_ => ())
+  def delete(userId: UUID, chanNullId: UUID): Future[Unit] = db.run(deleteAction(userId, chanNullId)).map(_ => ())
 }

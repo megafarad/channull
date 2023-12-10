@@ -158,17 +158,17 @@ trait AppTableDefinitions { self: AuthTableDefinitions =>
 
   val chanNullPostReactionTableQuery = TableQuery[ChanNullPostReactionTable]
 
-  case class ChanNullUserRow(id: UUID, chanNullId: UUID, userId: UUID, role: UserRole.Value, lastReadMessageId: Option[UUID])
+  case class ChanNullUserRow(chanNullId: UUID, userId: UUID, role: UserRole.Value, lastReadMessageId: Option[UUID])
 
   class ChanNullUserTable(tag: Tag) extends Table[ChanNullUserRow](tag, Some("app"), "channull_user") {
-    def id = column[UUID]("id", O.PrimaryKey)
     def chanNullId = column[UUID]("channull_id")
     def userId = column[UUID]("user_id")
     def role = column[UserRole.Value]("role")
     def lastReadMessageId = column[Option[UUID]]("last_read_message_id")
     def chanNull = foreignKey("app_channull_user_channull_id_fk", chanNullId, chanNullTableQuery)(_.id)
     def user = foreignKey("app_channull_user_user_id_fk", userId, userTableQuery)(_.id)
-    def * = (id, chanNullId, userId, role, lastReadMessageId).mapTo[ChanNullUserRow]
+    def pk = primaryKey("app_channull_user_pk", (chanNullId, userId))
+    def * = (chanNullId, userId, role, lastReadMessageId).mapTo[ChanNullUserRow]
   }
 
   val chanNullUserTableQuery = TableQuery[ChanNullUserTable]

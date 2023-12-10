@@ -35,7 +35,6 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
   val databaseApi: DBApi = app.injector.instanceOf[DBApi]
 
   val testUpsertChanNullUser: UpsertChanNullUserRequest = UpsertChanNullUserRequest(
-    UUID.randomUUID(),
     testParentChanNullId,
     testUser.userID,
     UserRole.Admin,

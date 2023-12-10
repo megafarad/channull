@@ -25,12 +25,14 @@ trait ChanNullUserDAO {
    */
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser]
 
+
   /**
-   * Deletes the ChanNullUser with the specified ID.
+   * Deletes a user with the given userId and ChanNull with the given chanNullId.
    *
-   * @param id The UUID of the item to delete.
-   * @return A Future[Unit] representing the completion of the delete operation.
+   * @param userId     The UUID of the user to be deleted.
+   * @param chanNullId The UUID of the ChanNull to be deleted.
+   * @return A Future that completes when the deletion is successful.
    */
-  def delete(id: UUID): Future[Unit]
+  def delete(userId: UUID, chanNullId: UUID): Future[Unit]
 
 }

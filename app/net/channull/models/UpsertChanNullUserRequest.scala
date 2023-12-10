@@ -2,4 +2,4 @@ package net.channull.models
 
 import java.util.UUID
 
-case class UpsertChanNullUserRequest(id: UUID, chanNullId: UUID, userId: UUID, role: UserRole.Value, lastReadMessageId: Option[UUID])
+case class UpsertChanNullUserRequest(chanNullId: UUID, userId: UUID, role: UserRole.Value, lastReadMessageId: Option[UUID])
