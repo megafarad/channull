@@ -33,8 +33,21 @@ class BlockedUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
           BlockedUser(id, blockingUser, blockedUser, timestamp)
       }
   }
+
+  /**
+   * Gets blocks by blocking user ID
+   *
+   * @param blockingUserId  The ID of the blocking user.
+   * @return
+   */
   def getBlocks(blockingUserId: UUID): Future[Seq[BlockedUser]] = getBlocks(ByBlockingUserId(blockingUserId))
 
+  /**
+   * Upserts a blocked user
+   *
+   * @param request The request to upsert
+   * @return
+   */
   def upsert(request: UpsertBlockedUserRequest): Future[BlockedUser] = {
     val upsertRowAction = blockedUserTableQuery.insertOrUpdate(BlockedUserRow(
       request.id, request.blockingUserId, request.blockedUserId, request.timestamp

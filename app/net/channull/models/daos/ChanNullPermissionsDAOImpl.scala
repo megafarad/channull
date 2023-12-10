@@ -14,9 +14,19 @@ class ChanNullPermissionsDAOImpl @Inject() (protected val dbConfigProvider: Data
 
   private def upsertAction(permissions: ChanNullPermissions) = chanNullPermissionsTableQuery.insertOrUpdate(permissions)
 
+  /**
+   * Gets permissions for a ChanNull
+   * @param chanNullId  The ID of the ChanNull
+   * @return
+   */
   def getByChanNullId(chanNullId: UUID): Future[Seq[ChanNullPermissions]] = db.run(getByChanNullIdQuery(chanNullId)
     .result)
 
+  /**
+   * Upserts ChanNull Permissions
+   * @param permissions The permissions to upsert
+   * @return
+   */
   def upsert(permissions: ChanNullPermissions): Future[ChanNullPermissions] = db.run(upsertAction(permissions))
     .map(_ => permissions)
 }

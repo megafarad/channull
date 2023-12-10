@@ -60,6 +60,13 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
       }
   }
 
+  /**
+   *
+   * Upserts a ChanNull Ban
+   *
+   * @param request   The request to upsert
+   * @return
+   */
   def upsert(request: UpsertChanNullBanRequest): Future[ChanNullBan] = {
     val upsertRowAction = chanNullBanTableQuery.insertOrUpdate(ChanNullBanRow(
       id = request.id, chanNullId = request.chanNullId, userId = request.userId, bannedBy = request.bannedByUserId,
@@ -76,7 +83,21 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
 
   }
 
+  /**
+   *
+   * Deletes a ChanNull Ban
+   *
+   * @param id The ID of the ban
+   * @return
+   */
   def delete(id: UUID): Future[Unit] = db.run(chanNullBanTableQuery.filter(_.id === id).delete).map(_ => ())
 
+  /**
+   *
+   * Gets bans by ChanNull ID
+   *
+   * @param chanNullId  The ID of the ChanNull
+   * @return
+   */
   def getByChanNullId(chanNullId: UUID): Future[Seq[ChanNullBan]] = getBans(ByChanNullId(chanNullId))
 }

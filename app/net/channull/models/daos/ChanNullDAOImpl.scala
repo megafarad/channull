@@ -73,12 +73,35 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
 
     }
 
+  /**
+   * Gets a ChanNull by ID
+   *
+   * @param id  The ID of the ChanNull
+   * @return
+   */
   def get(id: UUID): Future[Option[ChanNull]] = getChanNullRecursive(ByID(id)).map(_.headOption)
 
+  /**
+   * Gets a ChanNull by name
+   *
+   * @param name  The name of the ChanNull
+   * @return
+   */
   def get(name: String): Future[Option[ChanNull]] = getChanNullRecursive(ByName(name)).map(_.headOption)
 
+  /**
+   * Gets a random public ChanNull
+   *
+   * @return
+   */
   def getRandomPublic: Future[Option[ChanNull]] = getChanNullRecursive(RandomPublic).map(_.headOption)
 
+  /**
+   * Upserts a ChanNull
+   *
+   * @param request The request to upsert
+   * @return
+   */
   def upsert(request: UpsertChanNullRequest): Future[ChanNull] = {
     val upsertRowAction = chanNullTableQuery.insertOrUpdate(ChanNullRow(
       id = request.id, parentId = request.parentId, name = request.name, description = request.description,
@@ -98,6 +121,14 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
   private def getTotalMatches(nameContains: String) = chanNullTableQuery.filter(_.name like s"%$nameContains%")
     .length.result
 
+  /**
+   * Search for ChanNulls by name contents
+   *
+   * @param nameContains  Name contents to search by
+   * @param page          The page of the output
+   * @param pageSize      The page size of the output
+   * @return
+   */
   def search(nameContains: String, page: Int, pageSize: Int): Future[Page[ChanNull]] = for {
     items <- getChanNullRecursive(SearchByName(nameContains, page, pageSize))
     totalMatches <- db.run(getTotalMatches(nameContains))

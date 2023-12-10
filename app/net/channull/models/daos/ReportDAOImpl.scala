@@ -60,11 +60,25 @@ class ReportDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigPro
     .join(reportTableQuery).on(_.id === _.postId)
     .map(_._2)
 
+  /**
+   * Retrieves reports by ChanNull ID.
+   *
+   * @param chanNullId The ChanNull ID to filter the reports.
+   * @param page       The page number to retrieve.
+   * @param pageSize   The number of reports per page.
+   * @return A Future containing a Page of Report objects that match the given ChanNull ID.
+   */
   def getByChanNullId(chanNullId: UUID, page: Int, pageSize: Int): Future[Page[Report]] = for {
     reports <- getReports(ByChanNullId(chanNullId, page, pageSize))
     totalCount <- db.run(totalReportsQuery(chanNullId).length.result)
   } yield Page(reports, page, page * pageSize, totalCount.toLong)
 
+  /**
+   * Upserts a report based on the given request.
+   *
+   * @param request the UpsertReportRequest object representing the report to upsert
+   * @return a Future of Report representing the upserted report
+   */
   def upsert(request: UpsertReportRequest): Future[Report] = {
     val upsertRowAction = reportTableQuery.insertOrUpdate(ReportRow(
       request.id, request.reporterId, request.postId, request.report, request.timestamp, request.status

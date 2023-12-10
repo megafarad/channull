@@ -105,12 +105,6 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       })
   }
 
-  /**
-   * Deletes the post. Descendant posts, related reactions and media also get deleted with cascading deletes.
-   *
-   * @param id The ID of the post
-   * @return
-   */
   private def deleteAction(id: UUID) = chanNullPostTableQuery.filter(_.id === id).delete
 
   private def addAction(upsertRequest: UpsertChanNullPostRequest) =
@@ -118,19 +112,47 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       chanNullId = upsertRequest.chanNullId, text = upsertRequest.text, whenCreated = upsertRequest.whenCreated,
       whoCreated = upsertRequest.whoCreated, expiry = upsertRequest.expiry))
 
+  /**
+   * Get paginated posts for a ChanNull
+   *
+   * @param chanNullName    The name of the ChanNull
+   * @param loggedInUserId  The ID of the user, if logged in
+   * @param page            The page of the output
+   * @param pageSize        The page size in the output
+   * @return
+   */
   def getPosts(chanNullName: String, loggedInUserId: Option[UUID], page: Int, pageSize: Int): Future[Page[ChanNullPost]] = for {
     posts <- getPostsRecursive(NullParent(chanNullName, loggedInUserId, page, pageSize))
     totalCount <- db.run(totalChanNullPostsQuery(chanNullName, loggedInUserId).length.result)
   } yield Page(posts, page, page * pageSize, totalCount.toLong)
 
+  /**
+   * Gets a specific post
+   *
+   * @param postId          The ID of the post to get
+   * @param loggedInUserId  The ID of the user, if logged in
+   * @return
+   */
   def getPost(postId: UUID, loggedInUserId: Option[UUID]): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(postId,
     loggedInUserId)).map(_.headOption)
 
+  /**
+   * Upserts a ChanNull Post
+   *
+   * @param upsertRequest   The request to upsert
+   * @return
+   */
   def upsert(upsertRequest: UpsertChanNullPostRequest): Future[ChanNullPost] = db.run(addAction(upsertRequest))
     .flatMap {
       _ =>
         getPost(upsertRequest.id, None).map(_.get)
     }
 
+  /**
+   * Deletes the post. Descendant posts, related reactions and media also get deleted with cascading deletes.
+   *
+   * @param postId The ID of the post
+   * @return
+   */
   def delete(postId: UUID): Future[Unit] = db.run(deleteAction(postId)).map(_ => ())
 }

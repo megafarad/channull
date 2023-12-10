@@ -37,14 +37,34 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
 
   private def deleteAction(id: UUID) = chanNullUserTableQuery.filter(_.id === id).delete
 
+  /**
+   * Gets a paginated list of users for a ChanNull
+   *
+   * @param chanNullId  The ID of the ChanNull
+   * @param page        The page of the output
+   * @param pageSize    The page size of the output
+   * @return
+   */
   def getChanNullUsers(chanNullId: UUID, page: Int, pageSize: Int): Future[Page[ChanNullUser]] = for {
     items <- runQueryChanNullUsers(ByChanNullId(chanNullId, page, pageSize))
     totalCount <- db.run(chanNullUserTableQuery.filter(_.chanNullId === chanNullId).length.result)
   } yield Page(items, page = page, offset = page * pageSize, total = totalCount.toLong)
 
+  /**
+   * Upserts the ChanNullUser using the provided request.
+   *
+   * @param request The UpsertChanNullUserRequest object containing the information to upsert the ChanNullUser.
+   * @return A Future of ChanNullUser representing the upserted ChanNullUser.
+   */
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser] = db.run(upsertAction(request)).flatMap {
     _ => runQueryChanNullUsers(ById(request.id)).map(_.head)
   }
 
+  /**
+   * Deletes the ChanNullUser with the specified ID.
+   *
+   * @param id The UUID of the item to delete.
+   * @return A Future[Unit] representing the completion of the delete operation.
+   */
   def delete(id: UUID): Future[Unit] = db.run(deleteAction(id)).map(_ => ())
 }
