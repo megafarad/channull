@@ -18,6 +18,7 @@ class ChanNullUserDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
     val baseQuery = query match {
       case ByChanNullAndUserId(userId, chanNullId) => chanNullUserTableQuery.filter(tbl => tbl.userId === userId && tbl.chanNullId === chanNullId)
       case ByChanNullId(chanNullId, page, pageSize) => chanNullUserTableQuery.filter(_.chanNullId === chanNullId)
+        .sortBy(_.role)
         .drop(page * pageSize).take(pageSize)
     }
     baseQuery.join(userTableQuery).on(_.userId === _.id)

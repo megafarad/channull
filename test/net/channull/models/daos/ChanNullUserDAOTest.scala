@@ -12,6 +12,7 @@ import play.api.db.DBApi
 import play.api.db.evolutions.Evolutions
 import play.api.inject.guice.GuiceApplicationBuilder
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,17 +42,42 @@ class ChanNullUserDAOTest extends PlaySpec with GuiceOneAppPerSuite with ScalaFu
     None
   )
 
+  val testRegularUser: User = User(
+    UUID.randomUUID(),
+    "testRegularUser",
+    Some("test"),
+    Some("User"),
+    Some("testRegularUser"),
+    Some("testRegularUser@example.com"),
+    None,
+    None,
+    Instant.now(),
+    activated = true
+  )
+
+  val testUpsertRegularUser: UpsertChanNullUserRequest = UpsertChanNullUserRequest(
+    testParentChanNullId,
+    testRegularUser.userID,
+    UserRole.User,
+    None
+  )
+
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(scaled(1.second))
 
   "ChanNullUserDAO" should {
     "Upsert and get by ChanNullID properly" in {
       (for {
         _ <- userDAO.save(testUser)
+        _ <- userDAO.save(testRegularUser)
         _ <- chanNullDAO.upsert(testParentChanNullUpsertRequest)
         _ <- chanNullUserDAO.upsert(testUpsertChanNullUser)
+        _ <- chanNullUserDAO.upsert(testUpsertRegularUser)
         chanNullUsers <- chanNullUserDAO.getChanNullUsers(testParentChanNullId, 0, 10)
       } yield {
-        chanNullUsers.items.size must be(1)
+        chanNullUsers.items.size must be(2)
+        chanNullUsers.total must be(2)
+        chanNullUsers.items.map(_.role).head must be(UserRole.Admin)
+        chanNullUsers.items.map(_.role)(1) must be(UserRole.User)
       }).futureValue
     }
   }
