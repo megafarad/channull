@@ -5,9 +5,10 @@ import PostgresProfile.api._
 import play.api.Logging
 import play.api.db.slick.DatabaseConfigProvider
 
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullBanDAO with DAOSlick with Logging {
 
@@ -16,8 +17,10 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
   private case class ByChanNullId(chanNullId: UUID) extends ChanNullBanQuery
   private def banRowsQuery(query: ChanNullBanQuery) = {
     val filteredQuery = query match {
-      case ById(id) => chanNullBanTableQuery.filter(_.id === id)
-      case ByChanNullId(chanNullId) => chanNullBanTableQuery.filter(_.chanNullId === chanNullId)
+      case ById(id) => chanNullBanTableQuery.filter(tbl => tbl.id === id && (tbl.expiry.isEmpty || tbl.expiry >=
+        Instant.now()))
+      case ByChanNullId(chanNullId) => chanNullBanTableQuery.filter(tbl => tbl.chanNullId === chanNullId &&
+        (tbl.expiry.isEmpty || tbl.expiry >= Instant.now()))
     }
 
     filteredQuery.join(userTableQuery).on(_.userId === _.id).join(userTableQuery).on(_._1.bannedBy === _.id)

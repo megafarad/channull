@@ -5,9 +5,10 @@ import play.api.db.slick.DatabaseConfigProvider
 import PostgresProfile.api._
 import play.api.Logging
 
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPostDAO with DAOSlick with Logging {
 
@@ -19,31 +20,23 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   private case class NullParent(chanNullName: String, loggedInUserId: Option[UUID], page: Int, pageSize: Int)
     extends ChanNullPostQuery
 
-
-
   private def postRowQuery(postQuery: ChanNullPostQuery) = {
     val filteredQuery: Query[ChanNullPostTable, ChanNullPostRow, Seq] = postQuery match {
       case ByID(id, loggedInUserId) =>
-        val baseQuery = chanNullPostTableQuery.filter(_.id === id)
-        loggedInUserId match {
-          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
-          case None => baseQuery
-        }
+        val baseQuery = chanNullPostTableQuery.filter(tbl => tbl.id === id && (tbl.expiry.isEmpty || tbl.expiry > Instant.now()))
+        factorBlocks(loggedInUserId, baseQuery)
       case ByParentID(parentID, loggedInUserId) =>
-        val baseQuery = chanNullPostTableQuery.filter(_.parentId === parentID)
-        loggedInUserId match {
-          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
-          case None => baseQuery
-        }
+        val baseQuery = chanNullPostTableQuery.filter(tbl => tbl.parentId === parentID && (tbl.expiry.isEmpty || tbl.expiry > Instant.now()))
+        factorBlocks(loggedInUserId, baseQuery)
       case NullParent(chanNullName, loggedInUserId, page, pageSize) =>
         val offset = page * pageSize
         val baseQuery = chanNullTableQuery.filter(_.name === chanNullName).join(chanNullPostTableQuery)
-          .on(_.id === _.chanNullId).filter(_._2.parentId.isEmpty).drop(offset).take(pageSize)
+          .on(_.id === _.chanNullId).filter {
+            case (_, tbl) => tbl.parentId.isEmpty && (tbl.expiry.isEmpty || tbl.expiry > Instant.now())
+          }
           .map(_._2)
-        loggedInUserId match {
-          case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
-          case None => baseQuery
-        }
+        val blocksFactored = factorBlocks(loggedInUserId, baseQuery)
+        blocksFactored.drop(offset).take(pageSize)
     }
 
     filteredQuery.join(userTableQuery).on(_.whoCreated === _.id)
@@ -54,6 +47,13 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
       }
   }
 
+  private def factorBlocks(loggedInUserId: Option[UUID], baseQuery: Query[ChanNullPostTable, ChanNullPostRow, Seq]) = {
+    loggedInUserId match {
+      case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
+      case None => baseQuery
+    }
+  }
+
   private def isBlocked(retrievingUserId: UUID, post: ChanNullPostTable) = {
     post.whoCreated in blockedUserTableQuery.filter(blockedUser => blockedUser.blockedUserId ===
       retrievingUserId).map(_.blockingUserId)
@@ -62,10 +62,7 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
   private def totalChanNullPostsQuery(chanNullName: String, loggedInUserId: Option[UUID]) = {
     val baseQuery = chanNullTableQuery.filter(_.name === chanNullName)
       .join(chanNullPostTableQuery).on(_.id === _.chanNullId).map(_._2)
-    loggedInUserId match {
-      case Some(userId) => baseQuery.filterNot(isBlocked(userId, _))
-      case None => baseQuery
-    }
+    factorBlocks(loggedInUserId, baseQuery)
   }
 
   private def postRowWithReactions(postQuery: ChanNullPostQuery) = {
