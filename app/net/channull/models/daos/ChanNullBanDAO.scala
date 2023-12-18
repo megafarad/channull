@@ -2,6 +2,7 @@ package net.channull.models.daos
 
 import net.channull.models._
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.Future
 
@@ -24,6 +25,14 @@ trait ChanNullBanDAO {
    * @return
    */
   def upsert(request: UpsertChanNullBanRequest): Future[ChanNullBan]
+
+  /**
+   * Gets IDs of expired bans
+   *
+   * @param dateTime  The current date/time
+   * @return A Seq of ban IDs
+   */
+  def findExpired(dateTime: Instant): Future[Seq[UUID]]
 
   /**
    *

@@ -2,6 +2,7 @@ package net.channull.models.daos
 
 import net.channull.models._
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.Future
 
@@ -26,6 +27,13 @@ trait ChanNullPostDAO {
    * @return
    */
   def getPost(postId: UUID, loggedInUserId: Option[UUID]): Future[Option[ChanNullPost]]
+
+  /**
+   * Gets IDs of expired posts
+   * @param dateTime  The current date/time
+   * @return
+   */
+  def findExpired(dateTime: Instant): Future[Seq[UUID]]
 
   /**
    * Upserts a ChanNull Post

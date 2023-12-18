@@ -25,7 +25,6 @@ trait ChanNullUserDAO {
    */
   def upsert(request: UpsertChanNullUserRequest): Future[ChanNullUser]
 
-
   /**
    * Deletes a user with the given userId and ChanNull with the given chanNullId.
    *

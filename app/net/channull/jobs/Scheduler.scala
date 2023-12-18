@@ -10,9 +10,9 @@ import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
  */
 class Scheduler @Inject() (
   system: ActorSystem,
-  @Named("auth-token-cleaner") authTokenCleaner: ActorRef) {
+  @Named("record-cleaner") recordCleaner: ActorRef) {
 
-  QuartzSchedulerExtension(system).schedule("AuthTokenCleaner", authTokenCleaner, AuthTokenCleaner.Clean)
+  QuartzSchedulerExtension(system).schedule("RecordCleaner", recordCleaner, RecordCleaner.Clean)
 
-  authTokenCleaner ! AuthTokenCleaner.Clean
+  recordCleaner ! RecordCleaner.Clean
 }

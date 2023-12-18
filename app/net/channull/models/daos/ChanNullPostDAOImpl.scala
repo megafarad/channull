@@ -8,7 +8,7 @@ import play.api.Logging
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullPostDAO with DAOSlick with Logging {
 
@@ -130,7 +130,8 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
    * @param loggedInUserId  The ID of the user, if logged in
    * @return
    */
-  def getPost(postId: UUID, loggedInUserId: Option[UUID]): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(postId,
+  def getPost(postId: UUID, loggedInUserId: Option[UUID]): Future[Option[ChanNullPost]] = getPostsRecursive(ByID(
+    postId,
     loggedInUserId)).map(_.headOption)
 
   /**
@@ -152,4 +153,13 @@ class ChanNullPostDAOImpl @Inject() (protected val dbConfigProvider: DatabaseCon
    * @return
    */
   def delete(postId: UUID): Future[Unit] = db.run(deleteAction(postId)).map(_ => ())
+
+  /**
+   * Gets IDs of expired posts
+   *
+   * @param dateTime The current date/time
+   * @return IDs of expired posts
+   */
+  def findExpired(dateTime: Instant): Future[Seq[UUID]] = db.run(chanNullPostTableQuery.filter(tbl =>
+    tbl.expiry.isDefined && tbl.expiry < dateTime).map(_.id).result)
 }

@@ -8,7 +8,7 @@ import play.api.db.slick.DatabaseConfigProvider
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ec: ExecutionContext) extends ChanNullBanDAO with DAOSlick with Logging {
 
@@ -103,4 +103,13 @@ class ChanNullBanDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConf
    * @return
    */
   def getByChanNullId(chanNullId: UUID): Future[Seq[ChanNullBan]] = getBans(ByChanNullId(chanNullId))
+
+  /**
+   * Gets IDs of expired bans
+   *
+   * @param dateTime The current date/time
+   * @return A Seq of ban IDs
+   */
+  def findExpired(dateTime: Instant): Future[Seq[UUID]] = db.run(chanNullBanTableQuery.filter(tbl =>
+    tbl.expiry.isDefined && tbl.expiry < dateTime).map(_.id).result)
 }

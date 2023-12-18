@@ -21,7 +21,7 @@ class AuthTokenDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfig
    * @return The found token or None if no token for the given ID could be found.
    */
   def find(id: UUID): Future[Option[AuthToken]] = db.run(authTokenTableQuery.filter(tbl => tbl.id === id && tbl.expiry
-      >= Instant.now).result.headOption)
+    >= Instant.now).result.headOption)
 
   /**
    * Finds expired tokens.
