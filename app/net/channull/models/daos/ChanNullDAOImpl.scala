@@ -21,7 +21,7 @@ class ChanNullDAOImpl @Inject() (protected val dbConfigProvider: DatabaseConfigP
   private def chanNullRowQuery(query: ChanNullQuery) = {
     val filteredQuery = query match {
       case ByID(id) => chanNullTableQuery.filter(_.id === id)
-      case ByName(name) => chanNullTableQuery.filter(_.name === name)
+      case ByName(name) => chanNullTableQuery.filter(_.name.toLowerCase === name.toLowerCase)
       case ByParentId(parentId) => chanNullTableQuery.filter(_.parentId === parentId)
       case SearchByName(nameContains, page, pageSize) =>
         val offset = page * pageSize
